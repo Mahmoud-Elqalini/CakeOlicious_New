@@ -1,0 +1,12 @@
+:root {
+  --primary-color: #4a2c2a;
+  --secondary-color: #58150a;
+  --tertiary-color: #ffffff;
+  --quaternary-color: #f5f5f5;
+  --quinary-color: #888888;
+  --senary-color: #222222;
+
+  --primary-font: "Bubblegum Sans", cursive;
+  --secondary-font: "Covered By Your Grace", cursive;
+  --tertiary-font: "Open Sans", sans-serif;
+}
