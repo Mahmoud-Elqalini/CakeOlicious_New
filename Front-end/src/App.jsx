@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import Layout from './Components/Layout/Layout'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import HomePage from './Pages/HomePage/HomePage'
 
 function App() {
   const [message, setMessage] = useState('');
@@ -27,7 +30,12 @@ function App() {
   }, []);
 
   return (
-    <>
+    <Router>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+        </Routes>
+      </Layout>
       <div className="app-container">
         <h1>Backend Connection Test</h1>
         {loading ? (
@@ -41,10 +49,11 @@ function App() {
           </div>
         )}
       </div>
-    </>
+    </Router>
   )
 }
 
 export default App
+
 
 

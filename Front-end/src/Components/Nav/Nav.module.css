@@ -1,0 +1,238 @@
+@import url("https://fonts.googleapis.com/css2?family=Bubblegum+Sans&family=Covered+By+Your+Grace&family=Open+Sans:ital,wght@0,400;1,300&display=swap");
+
+.navigation {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  background: #ffffff;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.upperNav {
+  width: 100%;
+  height: 150px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 35px;
+}
+
+.navSides {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brandLogo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none;
+  height: 93.31px;
+  margin-left: 100px;
+}
+
+.logoImage {
+  height: 93.31px;
+  position: absolute;
+  left: -80px;
+}
+
+.brandName {
+  font-family: "Bubblegum Sans", cursive;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 40px;
+  line-height: 150%;
+  display: flex;
+  align-items: center;
+  letter-spacing: 0.05em;
+  color: #4a2c2a;
+  text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+}
+
+.searchGroup {
+  display: flex;
+  align-items: center;
+  width: 220px;
+  height: 40px;
+  cursor: text;
+  position: relative;
+  background-color: #f8f8f8;
+  border-radius: 20px;
+  padding: 0 15px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.searchGroup:hover {
+  background-color: #f0f0f0;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.searchGroup:focus-within {
+  background-color: #ffffff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(74, 44, 42, 0.2);
+}
+
+.searchIcon {
+  color: #4a2c2a;
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+.searchText {
+  font-family: "Open Sans", sans-serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 14px;
+  color: #888;
+  pointer-events: none;
+}
+
+.searchInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: "Open Sans", sans-serif;
+  font-size: 14px;
+  width: 160px;
+  color: #4a2c2a;
+}
+
+.navIcons {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.iconGroup {
+  display: flex;
+  align-items: center;
+  margin-left: 30px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  text-decoration: none;
+}
+
+.iconGroup:hover {
+  opacity: 0.8;
+}
+
+.icon {
+  color: #4a2c2a;
+  margin-right: 8px;
+}
+
+.iconText {
+  font-family: "Bubblegum Sans", cursive;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 150%;
+  color: #4a2c2a;
+  letter-spacing: normal;
+}
+
+.lowerNav {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+  transition: all 0.3s ease;
+  z-index: 99;
+}
+
+.lowerNav.sticky {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.menuItems {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 48px;
+  flex-wrap: wrap;
+  padding: 0 20px;
+}
+
+.menuItem {
+  font-family: "Bubblegum Sans", cursive;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 150%;
+  color: #4a2c2a;
+  text-decoration: none;
+  position: relative;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  padding: 5px 0;
+  letter-spacing: normal;
+  white-space: nowrap;
+}
+
+.menuItem::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #4a2c2a;
+  transition: width 0.3s ease;
+}
+
+.menuItem:hover::after {
+  width: 100%;
+}
+
+.contactButton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 20px;
+  background: #58150a;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.contactButton:hover {
+  transform: translateY(-2px);
+  background: #6a1b0c;
+}
+
+.contactButton:active {
+  transform: translateY(0);
+}
+
+.buttonText {
+  font-family: "Covered By Your Grace", cursive;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 24px;
+  color: #ffffff;
+  letter-spacing: normal;
+  white-space: nowrap;
+}
+
+.navigation a {
+  text-decoration: none;
+}
