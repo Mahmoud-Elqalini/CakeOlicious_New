@@ -1,0 +1,96 @@
+.juiceBanner {
+  width: 100%;
+  background-color: #4a2c2a; /* Rich brown background like ChocoBanner */
+  padding: 60px 0;
+  overflow: hidden;
+  max-height: 500px !important; 
+  display: flex;
+  align-items: center;
+}
+
+.bannerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.textContent {
+  flex: 1;
+  padding-right: 30px;
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.title {
+  font-family: var(--primary-font);
+  font-size: 48px;
+  color: #e6c9a8; /* Light beige color for contrast */
+  margin-bottom: 15px;
+}
+
+.subtitle {
+  font-family: var(--secondary-font);
+  font-size: 28px;
+  color: #ffffff;
+  margin-bottom: 30px;
+}
+
+.shopButton {
+  background-color: #ffffff;
+  color: #4a2c2a;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 30px;
+  font-family: var(--tertiary-font);
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.shopButton:hover {
+  background-color: #f5e8c9;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.imageContainer {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  opacity: 0;
+  transform: translateX(50px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.imageContainer img {
+  max-width: 70%;
+  height: auto;
+}
+
+.textContent.visible,
+.imageContainer.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .bannerContent {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .textContent {
+    padding-right: 0;
+    margin-bottom: 30px;
+  }
+  
+  .imageContainer {
+    justify-content: center;
+  }
+}

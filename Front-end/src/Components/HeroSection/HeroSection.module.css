@@ -1,0 +1,84 @@
+/* Shahd Elwan */
+.heroSection {
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.videoContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.backgroundVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  color: #ffffff;
+  max-width: 800px;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.title {
+  width: max-content;
+  font-family: "Bubblegum Sans", cursive;
+  font-size: 86px;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+  color: #fff;
+}
+
+.subtitle {
+  font-family: "Covered By Your Grace", cursive;
+  font-size: 52px;
+  margin-bottom: 2rem;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+  color: #ffb6c1;
+}
+
+.ctaButton {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  font-family: "Poppins", sans-serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.5);
+}
+
+.ctaButton:hover {
+  background: #c0392b;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6);
+}

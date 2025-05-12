@@ -1,0 +1,102 @@
+.cakeBanner {
+  width: 100%;
+  background-color: #fdf6e3;
+  padding: 60px 0;
+  overflow: hidden;
+  height: 500px !important;
+  align-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bannerContent {
+  gap: 12rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.textContent {
+  flex: 1;
+  padding-left: 30px;
+  opacity: 0;
+  transform: translateX(50px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.title {
+  font-family: var(--primary-font);
+  font-size: 48px;
+  color: #3c2415; /* Dark brown color for contrast */
+  margin-bottom: 15px;
+  width: max-content;
+}
+
+.subtitle {
+  font-family: var(--secondary-font);
+  font-size: 28px;
+  color: #6b4226;
+  margin-bottom: 30px;
+}
+
+.shopButton {
+  background-color: #3c2415;
+  color: #ffffff;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 30px;
+  font-family: var(--tertiary-font);
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.shopButton:hover {
+  background-color: #5a3a20;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.imageContainer {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.imageContainer img {
+  max-width: 120%;
+  height: auto;
+}
+
+.textContent.visible,
+.imageContainer.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .bannerContent {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .textContent {
+    padding-left: 0;
+    margin-top: 30px;
+    order: 2;
+  }
+
+  .imageContainer {
+    justify-content: center;
+    order: 1;
+  }
+}
