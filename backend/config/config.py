@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 # Loading settings from an .env file
 load_dotenv()
-print("Loaded DATABASE_URL from .env:", os.getenv('DATABASE_URL'))  # للتأكد من تحميل .env
+print("Loaded DATABASE_URL from .env:", os.getenv('DATABASE_URL'))  
 
 class Config:
     FLASK_ENV = os.getenv('FLASK_ENV', 'development')
