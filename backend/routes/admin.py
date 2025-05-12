@@ -91,11 +91,83 @@ class UpdateDiscountForm(FlaskForm):
 @admin_bp.route('/admin', methods=['GET'])
 @token_required
 def admin_dashboard(current_user):
-    # user_id = 1  Temporary, it will change when we add the login
     if not check_admin(current_user):
         logger.warning(f"Unauthorized access attempt for user_id: {current_user.id}")
         return jsonify({'message': 'Unauthorized access'}), 403
-    return jsonify({'message': 'Welcome to the admin dashboard'}), 200
+    
+    try:
+        # Get total products count
+        products_count = db.session.execute("SELECT COUNT(*) FROM products").scalar()
+        
+        # Get total users count
+        users_count = db.session.execute("SELECT COUNT(*) FROM users").scalar()
+        
+        # Get total orders count
+        orders_count = db.session.execute("SELECT COUNT(*) FROM orders").scalar()
+        
+        # Get total revenue
+        total_revenue = db.session.execute("SELECT SUM(total_amount) FROM orders").scalar() or 0
+        
+        # Get recent activity (last 5 orders)
+        recent_orders = db.session.execute("""
+            SELECT o.id, u.username, o.total_amount, o.order_date, o.status
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            ORDER BY o.order_date DESC
+            LIMIT 5
+        """).fetchall()
+        
+        # Format recent orders
+        recent_activity = []
+        for order in recent_orders:
+            recent_activity.append({
+                'id': order[0],
+                'username': order[1],
+                'amount': float(order[2]) if isinstance(order[2], Decimal) else order[2],
+                'date': order[3].strftime('%Y-%m-%d %H:%M:%S') if order[3] else None,
+                'status': order[4],
+                'type': 'order'
+            })
+        
+        # Get recent user registrations
+        recent_users = db.session.execute("""
+            SELECT id, username, email, full_name
+            FROM users
+            ORDER BY id DESC
+            LIMIT 3
+        """).fetchall()
+        
+        # Add recent user registrations to activity
+        for user in recent_users:
+            recent_activity.append({
+                'id': user[0],
+                'username': user[1],
+                'email': user[2],
+                'name': user[3],
+                'type': 'user'
+            })
+        
+        # Sort all activities by most recent first (assuming newer IDs are more recent)
+        recent_activity.sort(key=lambda x: x['id'], reverse=True)
+        recent_activity = recent_activity[:5]  # Limit to 5 most recent activities
+        
+        return jsonify({
+            'message': 'Welcome to the admin dashboard',
+            'stats': {
+                'totalProducts': products_count,
+                'totalUsers': users_count,
+                'totalOrders': orders_count,
+                'totalRevenue': float(total_revenue) if isinstance(total_revenue, Decimal) else total_revenue
+            },
+            'recentActivity': recent_activity
+        }), 200
+        
+    except SQLAlchemyError as e:
+        logger.error(f"SQLAlchemy error fetching dashboard stats: {str(e)}")
+        return jsonify({'message': 'Error fetching dashboard statistics', 'error': str(e)}), 500
+    except Exception as e:
+        logger.error(f"General error fetching dashboard stats: {str(e)}")
+        return jsonify({'message': 'Error fetching dashboard statistics', 'error': str(e)}), 500
 
 # ###########################################################################################################################
 

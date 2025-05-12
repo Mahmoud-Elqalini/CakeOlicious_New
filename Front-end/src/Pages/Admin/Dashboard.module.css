@@ -1,0 +1,114 @@
+.adminLayout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.dashboardContainer {
+    flex: 1;
+    padding: 30px;
+    margin-left: 250px; /* Same as AdminNav width */
+    background-color: #f5f7fa;
+}
+
+.dashboardContainer h1 {
+    margin-bottom: 30px;
+    color: #333;
+    font-size: 28px;
+}
+
+.error {
+    color: #e74c3c;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #fdecea;
+    border-radius: 4px;
+}
+
+.message {
+    color: #27ae60;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #e8f5e9;
+    border-radius: 4px;
+}
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.statCard {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    text-align: center;
+}
+
+.statCard h3 {
+    color: #7f8c8d;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.statValue {
+    font-size: 28px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.recentActivity {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+}
+
+.recentActivity h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.activityList {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.activityItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.activityItem p {
+    margin: 0;
+    color: #333;
+}
+
+.activityItem span {
+    color: #7f8c8d;
+    font-size: 14px;
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    font-size: 18px;
+    color: #7f8c8d;
+}
+
+.noActivity {
+    color: #7f8c8d;
+    text-align: center;
+    padding: 20px 0;
+}
+
