@@ -7,18 +7,22 @@ import { FaSearch, FaUser, FaHeart, FaShoppingCart } from 'react-icons/fa'
 const Nav = () => {
     const [isSticky, setIsSticky] = useState(false);
     const [searchActive, setSearchActive] = useState(false);
+    const [scrollPosition, setScrollPosition] = useState(0);
 
     useEffect(() => {
         const handleScroll = () => {
+            const position = window.scrollY;
+            setScrollPosition(position);
+            
             const topNavHeight = 150;
-            if (window.scrollY > topNavHeight) {
+            if (position > topNavHeight) {
                 setIsSticky(true);
             } else {
                 setIsSticky(false);
             }
         };
 
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 

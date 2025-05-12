@@ -1,8 +1,10 @@
+// Shahd Elwan
 import { useState, useEffect } from 'react'
 import './App.css'
 import Layout from './Components/Layout/Layout'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import HomePage from './Pages/HomePage/HomePage'
+
 
 function App() {
   const [message, setMessage] = useState('');
@@ -30,6 +32,8 @@ function App() {
   }, []);
 
   return (
+
+
     <Router>
       <Layout>
         <Routes>
@@ -50,10 +54,12 @@ function App() {
         )}
       </div>
     </Router>
+
   )
 }
 
 export default App
+
 
 
 

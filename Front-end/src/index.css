@@ -1,3 +1,4 @@
+/* Shahd Elwan */
 :root {
   --primary-color: #4a2c2a;
   --secondary-color: #58150a;
@@ -10,3 +11,28 @@
   --secondary-font: "Covered By Your Grace", cursive;
   --tertiary-font: "Open Sans", sans-serif;
 }
+
+/* Selection color */
+::selection {
+  background-color: #f5e8c9; /* Beige color */
+  color: var(--primary-color); /* Dark text for contrast */
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px; /* Slightly thinner */
+}
+
+::-webkit-scrollbar-track {
+  background: var(--quaternary-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(74, 44, 42, 0.7); /* Lighter primary color */
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(88, 21, 10, 0.7); /* Lighter secondary color */
+}
+
