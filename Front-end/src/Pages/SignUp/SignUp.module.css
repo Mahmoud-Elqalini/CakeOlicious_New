@@ -136,3 +136,30 @@ form {
     margin-bottom: 24px;
   }
 }
+
+.formGroup input:not(:placeholder-shown) {
+  background-color: #f5e8c9 !important; 
+  border-color: var(--primary-color);
+}
+
+
+.formGroup input:focus:not(:placeholder-shown) {
+  background-color: #f5e8c9 !important;
+}
+
+
+.formGroup input:-webkit-autofill {
+  background-color: #f5e8c9 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #f5e8c9 inset !important;
+  border-color: var(--primary-color);
+}
+
+.formGroup input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #f5e8c9 inset !important;
+  border-color: var(--primary-color);
+}
+
+.formGroup input::placeholder {
+  color: #aaa;
+  font-style: italic;
+}

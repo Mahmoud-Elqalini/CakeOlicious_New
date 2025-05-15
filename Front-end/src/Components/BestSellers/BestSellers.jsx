@@ -2,7 +2,7 @@ import React from 'react'
 import styles from './BestSellers.module.css'
 import images from '../../assets/assets'
 import { Link } from 'react-router-dom'
-import { FaShoppingCart, FaStar, FaEye } from 'react-icons/fa'
+import { FaShoppingCart, FaStar, FaEye, FaArrowRight } from 'react-icons/fa'
 
 const BestSellers = () => {
     const bestSellers = [
@@ -93,8 +93,8 @@ const BestSellers = () => {
                 </div>
 
                 <div className={styles.viewAllContainer}>
-                    <Link to="/products" className={styles.viewAllBtn}>
-                        View All Products
+                    <Link to="/products" className={styles.viewAllButton}>
+                        View All Products <FaArrowRight />
                     </Link>
                 </div>
             </div>

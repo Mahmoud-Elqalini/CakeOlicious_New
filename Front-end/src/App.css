@@ -1,7 +1,33 @@
-#root {
+
+
+
+.page-content {
   width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-  text-align: center;
+  min-height: 100%;
+  will-change: opacity, transform;
+  position: relative;
+}
+
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  font-size: 1.2rem;
+  color: var(--primary-color);
+}
+
+
+main {
+  flex: 1;
+  position: relative;
+  overflow-x: hidden;
 }

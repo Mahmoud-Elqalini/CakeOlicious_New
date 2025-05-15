@@ -96,9 +96,9 @@ const Nav = () => {
             <div className={`${styles.lowerNav} ${isSticky ? styles.sticky : ''}`}>
                 <div className={styles.menuItems}>
                     <Link to="/" className={styles.menuItem}>HOME</Link>
-                    <Link to="/chocolates" className={styles.menuItem}>CHOCOLATES</Link>
-                    <Link to="/cakes" className={styles.menuItem}>CAKES</Link>
-                    <Link to="/juices" className={styles.menuItem}>JUICES</Link>
+                    <Link to="/products?category_id=2" className={styles.menuItem}>CHOCOLATES</Link>
+                    <Link to="/products?category_id=1" className={styles.menuItem}>CAKES</Link>
+                    <Link to="/products?category_id=3" className={styles.menuItem}>JUICES</Link>
                     <Link to="/about" className={styles.menuItem}>ABOUT US</Link>
                     <Link to="/contact">
                         <button className={styles.contactButton}>
