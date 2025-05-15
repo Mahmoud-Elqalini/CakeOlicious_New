@@ -22,6 +22,7 @@ CREATE TABLE categories (
 -- Products table for catalog
 CREATE TABLE products (
     id INT PRIMARY KEY IDENTITY(1,1),
+    is_active BIT DEFAULT 1,
     product_name VARCHAR(100) NOT NULL,
     product_description TEXT,
     price DECIMAL(10, 2) NOT NULL,

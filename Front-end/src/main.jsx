@@ -1,13 +1,50 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
-import 'bootstrap/dist/css/bootstrap.min.css'
-import '@fortawesome/fontawesome-free/css/all.css'
-import 'react-toastify/dist/ReactToastify.css'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.jsx';
+import './index.css';
+import axios from 'axios';
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
+// Configure axios defaults
+axios.defaults.baseURL = 'http://localhost:5000'; // Set the base URL directly
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+axios.defaults.withCredentials = false; // Set to false for cross-origin requests
+
+// Add request interceptor for authentication and debugging
+axios.interceptors.request.use(
+  config => {
+    // Get the token from localStorage
+    const token = localStorage.getItem('token');
+    
+    // If token exists, add it to the headers
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    console.log(`Making ${config.method.toUpperCase()} request to: ${config.url}`);
+    return config;
+  },
+  error => {
+    console.error('Request error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for debugging
+axios.interceptors.response.use(
+  response => {
+    console.log(`Response from ${response.config.url}:`, response.status);
+    return response;
+  },
+  error => {
+    console.error('Response error:', error);
+    return Promise.reject(error);
+  }
+);
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
     <App />
-  </StrictMode>,
-)
+  </React.StrictMode>
+);
+
+

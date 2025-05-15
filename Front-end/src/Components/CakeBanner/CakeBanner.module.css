@@ -31,7 +31,7 @@
 .title {
   font-family: var(--primary-font);
   font-size: 48px;
-  color: #3c2415; /* Dark brown color for contrast */
+  color: #3c2415; 
   margin-bottom: 15px;
   width: max-content;
 }
@@ -82,7 +82,7 @@
   transform: translateX(0);
 }
 
-/* Responsive adjustments */
+
 @media (max-width: 768px) {
   .bannerContent {
     flex-direction: column;

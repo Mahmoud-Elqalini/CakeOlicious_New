@@ -1,9 +1,9 @@
 .chocoBanner {
   width: 100%;
-  background-color: #4a2c2a; /* Rich brown background matching your brand colors */
+  background-color: #4a2c2a; 
   padding: 60px 0;
   overflow: hidden;
-  max-height: 500px !important; /* Fixed height for consistency */
+  max-height: 500px !important; 
   display: flex;
   align-items: center;
 }
@@ -25,7 +25,7 @@
 .title {
   font-family: var(--primary-font);
   font-size: 48px;
-  color: #e6c9a8; /* Light beige color for contrast */
+  color: #e6c9a8; 
   margin-bottom: 15px;
 }
 .subtitle {
@@ -60,7 +60,7 @@
   transition: opacity 0.8s ease-out, transform 0.8s ease-out;
 }
 .imageContainer img {
-  max-width: 70%; /* Reduced from 100% to make the image smaller */
+  max-width: 70%; 
   height: auto;
 }
 .textContent.visible,
@@ -68,7 +68,7 @@
   opacity: 1;
   transform: translateX(0);
 }
-/* Responsive adjustments */
+
 @media (max-width: 768px) {
   .bannerContent {
     flex-direction: column;

@@ -897,7 +897,8 @@ GO
 -- ########################################################################### GetAllProducts #####################################
 -- Get All Products and return as a normal table
 CREATE PROCEDURE [dbo].[GetAllProducts]
-    @category_id INT = NULL -- Optional parameter, if NULL returns all products
+    @category_id INT = NULL, -- Optional parameter, if NULL returns all products
+    @only_active BIT = 0
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -918,6 +919,7 @@ BEGIN
     END
 
     -- Returns the product list with filtering based on category if passed
+    -- and only active products if @only_active is 1
     SELECT 
         p.id,
         p.product_name,
@@ -927,10 +929,12 @@ BEGIN
         p.category_id,
         c.category_name,
         p.image_url,
-        p.discount
+        p.discount,
+        p.is_active  -- Include is_active in the result
     FROM products p
     JOIN categories c ON p.category_id = c.id
-    WHERE (@category_id IS NULL OR p.category_id = @category_id);
+    WHERE (@category_id IS NULL OR p.category_id = @category_id)
+      AND (@only_active = 0 OR p.is_active = 1);
 END;
 GO
 -- ######################################################################### GetAllOrders ###################################
@@ -1103,90 +1107,160 @@ BEGIN
 END
 GO
 -- ################################################################# DeleteProduct ###############################################
+-- Drop the procedure if it exists
+DROP PROCEDURE IF EXISTS DeleteProduct;
+GO
+
+-- Create the DeleteProduct procedure that uses product_id
 CREATE PROCEDURE DeleteProduct
-    @product_name VARCHAR(100),
-    @ConfirmDeletion VARCHAR(10)
+    @product_id INT
 AS
 BEGIN
     SET NOCOUNT ON;
-
-    DECLARE @Result TABLE (status VARCHAR(10), message VARCHAR(255));
-    DECLARE @ExistingProductID INT;
-    DECLARE @OrderID INT;
-    DECLARE @OrderStatus VARCHAR(20);
-    DECLARE @OrderCount INT;
-
-    IF @ConfirmDeletion <> 'Yes'
+    
+    -- Check if product exists
+    IF NOT EXISTS (SELECT 1 FROM products WHERE id = @product_id)
     BEGIN
-        INSERT INTO @Result (status, message)
-        VALUES ('fail', 'Deletion cancelled. Please confirm deletion by passing Confirm Deletion = ''Yes''.');
+        SELECT 'fail' AS status, 'Product not found.' AS message;
+        RETURN;
     END
-    ELSE
+    
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        
+        -- Store product name for logging
+        DECLARE @product_name VARCHAR(100);
+        SELECT @product_name = product_name FROM products WHERE id = @product_id;
+        
+        -- Delete from cart_details first
+        DELETE FROM cart_details WHERE product_id = @product_id;
+        
+        -- Delete from product_reviews
+        DELETE FROM product_reviews WHERE product_id = @product_id;
+        
+        -- Delete from order_details
+        DELETE FROM order_details WHERE product_id = @product_id;
+        
+        -- Finally delete the product
+        DELETE FROM products WHERE id = @product_id;
+        
+        COMMIT TRANSACTION;
+        
+        SELECT 'success' AS status, 'Product deleted successfully.' AS message;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+            
+        SELECT 
+            'fail' AS status, 
+            'Error deleting product: ' + ERROR_MESSAGE() AS message;
+    END CATCH
+END;
+GO
+-- ################################################################# UpdateProduct ###############################################
+-- Drop the procedure if it exists
+DROP PROCEDURE IF EXISTS UpdateProduct;
+GO
+
+-- Create the UpdateProduct procedure
+CREATE PROCEDURE UpdateProduct
+    @product_id INT,
+    @product_name VARCHAR(100),
+    @description TEXT = NULL,
+    @price DECIMAL(10, 2),
+    @stock INT,
+    @category_id INT,
+    @image_url VARCHAR(255) = NULL,
+    @discount DECIMAL(5, 2) = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Check if product exists
+    IF NOT EXISTS (SELECT 1 FROM products WHERE id = @product_id)
     BEGIN
-        -- Check if the product exists
-        SELECT @ExistingProductID = id
-        FROM products
-        WHERE product_name = @product_name;
-
-        IF @ExistingProductID IS NOT NULL
-        BEGIN
-            -- Check if the product is linked to orders
-            SELECT @OrderCount = COUNT(*)
-            FROM order_details
-            WHERE product_id = @ExistingProductID;
-
-            IF @OrderCount > 0
-            BEGIN
-                -- Retrieve the Order ID & Status for this product
-                SELECT TOP 1 @OrderID = order_id, @OrderStatus = O.status
-                FROM order_details OD
-                JOIN orders O ON OD.order_id = O.id
-                WHERE OD.product_id = @ExistingProductID;
-
-                IF @OrderStatus = 'Delivered'
-                BEGIN
-                    -- Delete related order_details
-                    DELETE FROM order_details
-                    WHERE product_id = @ExistingProductID;
-
-                    -- Delete the related order
-                    DELETE FROM orders
-                    WHERE id = @OrderID;
-
-                    -- Delete the product
-                    DELETE FROM products
-                    WHERE id = @ExistingProductID;
-
-                    INSERT INTO @Result (status, message)
-                    VALUES ('success', 'Product deleted successfully! It was linked to a delivered order, which has also been deleted.');
-                END
-                ELSE
-                BEGIN
-                    INSERT INTO @Result (status, message)
-                    VALUES ('fail', 'Product cannot be deleted because it is linked to an active order (Status: ' + @OrderStatus + ').');
-                END
-            END
-            ELSE
-            BEGIN
-                -- Delete the product
-                DELETE FROM products
-                WHERE id = @ExistingProductID;
-
-                INSERT INTO @Result (status, message)
-                VALUES ('success', 'Product deleted successfully!');
-            END
-        END
-        ELSE
-        BEGIN
-            -- Product not found
-            INSERT INTO @Result (status, message)
-            VALUES ('fail', 'Product not found.');
-        END
+        SELECT 'fail' AS status, 'Product not found.' AS message;
+        RETURN;
     END
-
-    -- Return the result from the temporary table
-    SELECT status, message FROM @Result;
-END
+    
+    -- Check if category exists
+    IF NOT EXISTS (SELECT 1 FROM categories WHERE id = @category_id)
+    BEGIN
+        SELECT 'fail' AS status, 'Category not found.' AS message;
+        RETURN;
+    END
+    
+    -- Validate price and stock
+    IF @price <= 0
+    BEGIN
+        SELECT 'fail' AS status, 'Price must be greater than zero.' AS message;
+        RETURN;
+    END
+    
+    IF @stock < 0
+    BEGIN
+        SELECT 'fail' AS status, 'Stock cannot be negative.' AS message;
+        RETURN;
+    END
+    
+    -- Check if product name already exists for a different product
+    IF EXISTS (SELECT 1 FROM products WHERE product_name = @product_name AND id != @product_id)
+    BEGIN
+        SELECT 'fail' AS status, 'Product name already exists.' AS message;
+        RETURN;
+    END
+    
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        
+        -- Update product
+        UPDATE products
+        SET 
+            product_name = @product_name,
+            product_description = @description,
+            price = @price,
+            stock = @stock,
+            category_id = @category_id,
+            discount = @discount
+        WHERE id = @product_id;
+        
+        -- Update image_url only if provided
+        IF @image_url IS NOT NULL AND @image_url != ''
+        BEGIN
+            UPDATE products
+            SET image_url = @image_url
+            WHERE id = @product_id;
+        END
+        
+        COMMIT TRANSACTION;
+        
+        -- Return updated product details
+        SELECT 
+            'success' AS status, 
+            'Product updated successfully.' AS message,
+            p.id,
+            p.product_name,
+            p.product_description AS description,
+            p.price,
+            p.stock,
+            p.category_id,
+            c.category_name,
+            p.image_url,
+            p.discount
+        FROM products p
+        JOIN categories c ON p.category_id = c.id
+        WHERE p.id = @product_id;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+            
+        SELECT 
+            'fail' AS status, 
+            'Error updating product: ' + ERROR_MESSAGE() AS message;
+    END CATCH
+END;
 GO
 -- ################################################################# SearchProduct ###############################################
 
@@ -1678,4 +1752,64 @@ BEGIN
         SELECT @status AS status, @message AS message;
     END CATCH
 END
+GO
+-- ################################################################# ToggleProductVisibility ###############################################
+-- Drop the procedure if it exists
+DROP PROCEDURE IF EXISTS ToggleProductVisibility;
+GO
+
+-- Create the ToggleProductVisibility procedure
+CREATE PROCEDURE ToggleProductVisibility
+    @product_id INT,
+    @is_active BIT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Check if product exists
+    IF NOT EXISTS (SELECT 1 FROM products WHERE id = @product_id)
+    BEGIN
+        SELECT 'fail' AS status, 'Product not found.' AS message;
+        RETURN;
+    END
+    
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        
+        -- First, check if the is_active column exists
+        IF NOT EXISTS (
+            SELECT 1 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = 'products' AND COLUMN_NAME = 'is_active'
+        )
+        BEGIN
+            -- Add the column if it doesn't exist
+            ALTER TABLE products
+            ADD is_active BIT NOT NULL DEFAULT 1;
+        END
+        
+        -- Update product visibility
+        UPDATE products
+        SET is_active = @is_active
+        WHERE id = @product_id;
+        
+        COMMIT TRANSACTION;
+        
+        -- Return success message
+        SELECT 
+            'success' AS status, 
+            CASE WHEN @is_active = 1 
+                THEN 'Product activated successfully.' 
+                ELSE 'Product deactivated successfully.' 
+            END AS message;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+            
+        SELECT 
+            'fail' AS status, 
+            'Error toggling product visibility: ' + ERROR_MESSAGE() AS message;
+    END CATCH
+END;
 GO

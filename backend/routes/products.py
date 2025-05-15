@@ -22,8 +22,9 @@ def get_products():
         category_id = request.args.get('category_id', default=None, type=int)
 
         # Perform the stored procedure with category_id passed
+        # Modify the stored procedure to only return active products
         result = db.session.execute(
-            "EXEC GetAllProducts @category_id = :category_id",
+            "EXEC GetAllProducts @category_id = :category_id, @only_active = 1",
             {'category_id': category_id}
         )
         products = result.fetchall()
@@ -285,3 +286,28 @@ def delete_review(current_user, product_name):
     
 
 # mahmoud
+
+@product_bp.route('/categories', methods=['GET'])
+def get_categories():
+    """Get all categories"""
+    try:
+        logger.info("Fetching all categories")
+        
+        # Execute direct SQL query
+        result = db.session.execute("SELECT id, category_name FROM categories")
+        categories = result.fetchall()
+        
+        # Format the response
+        formatted_categories = []
+        for row in categories:
+            formatted_categories.append({
+                "id": row[0],
+                "category_name": row[1]
+            })
+        
+        logger.info(f"Retrieved {len(formatted_categories)} categories")
+        return jsonify({'categories': formatted_categories}), 200
+        
+    except Exception as e:
+        logger.error(f"Error fetching categories: {str(e)}")
+        return jsonify({'message': 'Error fetching categories', 'error': str(e)}), 500

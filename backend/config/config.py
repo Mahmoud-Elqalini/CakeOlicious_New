@@ -1,9 +1,8 @@
 import os
 from dotenv import load_dotenv
 
-# Loading settings from an .env file
 load_dotenv()
-print("Loaded DATABASE_URL from .env:", os.getenv('DATABASE_URL'))  # للتأكد من تحميل .env
+print("Loaded DATABASE_URL from .env:", os.getenv('DATABASE_URL'))
 
 class Config:
     FLASK_ENV = os.getenv('FLASK_ENV', 'development')
@@ -14,3 +13,4 @@ class Config:
     SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', False)
     SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax')
     REMEMBER_COOKIE_DURATION = int(os.getenv('REMEMBER_COOKIE_DURATION', 86400))
+    TOKEN_EXPIRATION_DAYS = int(os.getenv('TOKEN_EXPIRATION_DAYS', 1))  # Default to 1 day

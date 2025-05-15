@@ -1,9 +1,9 @@
 .juiceBanner {
   width: 100%;
-  background-color: #4a2c2a; /* Rich brown background like ChocoBanner */
+  background-color: #4a2c2a; 
   padding: 60px 0;
   overflow: hidden;
-  max-height: 500px !important; 
+  max-height: 500px !important;
   display: flex;
   align-items: center;
 }
@@ -28,7 +28,7 @@
 .title {
   font-family: var(--primary-font);
   font-size: 48px;
-  color: #e6c9a8; /* Light beige color for contrast */
+  color: #e6c9a8; 
   margin-bottom: 15px;
 }
 
@@ -78,18 +78,18 @@
   transform: translateX(0);
 }
 
-/* Responsive adjustments */
+
 @media (max-width: 768px) {
   .bannerContent {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .textContent {
     padding-right: 0;
     margin-bottom: 30px;
   }
-  
+
   .imageContainer {
     justify-content: center;
   }

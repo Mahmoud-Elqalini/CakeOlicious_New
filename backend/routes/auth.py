@@ -12,12 +12,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 auth_bp = Blueprint("auth", __name__)
 
-# Configure logging
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-# ===== SIGNUP =====
+
 @auth_bp.route("/signup", methods=["POST"])
 def signup():
     try:
@@ -64,7 +64,7 @@ def signup():
         return jsonify({"message": "Internal Server Error"}), 500
 
 
-# ===== LOGIN =====
+
 @auth_bp.route("/login", methods=["POST"])
 def login():
     try:
@@ -84,11 +84,11 @@ def login():
             )
             return jsonify({"message": "Missing username or password"}), 400
 
-        # Special case for admin credentials
+        
         if username == "admin" and password == "admin":
             admin_user = User.query.filter_by(username="admin").first()
             if not admin_user:
-                # Create admin user if it doesn't exist
+                
                 hashed_password = generate_password_hash("admin")
                 admin_user = User(
                     username="admin",
@@ -100,17 +100,18 @@ def login():
                 db.session.add(admin_user)
                 db.session.commit()
 
-            # Generate token for admin
+            
             token = jwt.encode(
                 {
                     "user_id": admin_user.id,
-                    "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
+                    "exp": datetime.datetime.utcnow()
+                    + datetime.timedelta(days=app.config["TOKEN_EXPIRATION_DAYS"]),
                 },
                 app.config["SECRET_KEY"],
                 algorithm="HS256",
             )
 
-            # Debug: Log the response
+            
             admin_response = {
                 "token": token,
                 "user": {
@@ -130,21 +131,22 @@ def login():
             token = jwt.encode(
                 {
                     "user_id": user.id,
-                    "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
+                    "exp": datetime.datetime.utcnow()
+                    + datetime.timedelta(days=app.config["TOKEN_EXPIRATION_DAYS"]),
                 },
                 app.config["SECRET_KEY"],
                 algorithm="HS256",
             )
             logger.info(f"Generated token for user {username}: {token}")
 
-            # Debug: Log the response
+            
             user_response = {
                 "token": token,
                 "user": {
                     "id": user.id,
                     "username": user.username,
                     "email": user.email,
-                    "role": user.user_role,  # Make sure this matches the field name in the database
+                    "role": user.user_role,  
                 },
             }
             logger.info(f"User login response: {user_response}")
@@ -159,7 +161,7 @@ def login():
         return jsonify({"message": "Internal Server Error"}), 500
 
 
-# ===== Token Required Decorator =====
+
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -195,12 +197,12 @@ def token_required(f):
     return decorated
 
 
-# ===== LOGOUT =====
+
 @auth_bp.route("/logout", methods=["POST"])
 @token_required
 def logout(current_user):
     try:
-        # For JWT, logout is client-side (discard token)
+        
         logger.info(f"User {current_user.id} logged out")
         return (
             jsonify({"message": "Logout successful. Please discard your token."}),
@@ -211,7 +213,7 @@ def logout(current_user):
         return jsonify({"message": "Internal Server Error", "error": str(e)}), 500
 
 
-# ===== USER PROFILE =====
+
 @auth_bp.route("/profile", methods=["GET"])
 @token_required
 def profile(current_user):
@@ -243,6 +245,3 @@ def profile(current_user):
     except Exception as e:
         logger.error(f"Profile error: {str(e)}")
         return jsonify({"message": "Internal Server Error", "error": str(e)}), 500
-
-
-# mahmoud

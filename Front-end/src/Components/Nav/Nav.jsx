@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import styles from './Nav.module.css'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.png'
 import { FaSearch, FaUser, FaHeart, FaShoppingCart } from 'react-icons/fa'
 
@@ -8,8 +8,14 @@ const Nav = () => {
     const [isSticky, setIsSticky] = useState(false);
     const [searchActive, setSearchActive] = useState(false);
     const [scrollPosition, setScrollPosition] = useState(0);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
+        // Check if user is logged in
+        const token = localStorage.getItem('token');
+        setIsLoggedIn(!!token);
+
         const handleScroll = () => {
             const position = window.scrollY;
             setScrollPosition(position);
@@ -28,6 +34,14 @@ const Nav = () => {
 
     const handleSearchClick = () => {
         setSearchActive(true);
+    };
+
+    const handleAccountClick = (e) => {
+        if (!isLoggedIn) {
+            e.preventDefault();
+            navigate('/signin');
+        }
+        // If logged in, the Link will navigate to /account
     };
 
     return (
@@ -57,9 +71,15 @@ const Nav = () => {
                     </Link>
 
                     <div className={styles.navIcons}>
-                        <Link to="/account" className={styles.iconGroup}>
+                        <Link 
+                            to={isLoggedIn ? "/account" : "#"} 
+                            className={styles.iconGroup}
+                            onClick={handleAccountClick}
+                        >
                             <FaUser className={styles.icon} />
-                            <span className={styles.iconText}>Account</span>
+                            <span className={styles.iconText}>
+                                {isLoggedIn ? "Account" : "Sign In"}
+                            </span>
                         </Link>
                         <Link to="/wishlist" className={styles.iconGroup}>
                             <FaHeart className={styles.icon} />

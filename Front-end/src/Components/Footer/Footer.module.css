@@ -8,7 +8,6 @@
   width: 100%;
 }
 
-
 .footerContent {
   max-width: 1440px;
   margin: 0 auto;
@@ -222,43 +221,42 @@
     grid-template-columns: 1fr;
     gap: 40px;
   }
-  
+
   .footerSection {
     align-items: center;
   }
-  
+
   .footerTitle {
     text-align: center;
   }
-  
+
   .footerTitle::after {
     left: 50%;
     transform: translateX(-50%);
   }
-  
+
   .footerText {
     text-align: center;
   }
-  
+
   .socialIcons {
     justify-content: center;
   }
-  
+
   .footerLinks li {
     text-align: center;
   }
-  
+
   .contactItem {
     justify-content: center;
   }
-  
+
   .footerBottom {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .footerBottomLinks {
     justify-content: center;
   }
 }
-

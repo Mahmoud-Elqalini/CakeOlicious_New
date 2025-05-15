@@ -3,6 +3,9 @@ import axios from 'axios';
 import styles from './Dashboard.module.css';
 import AdminNav from '../../Components/AdminNav/AdminNav';
 import { formatDistanceToNow } from 'date-fns';
+import { FiPackage, FiUsers, FiShoppingCart, FiDollarSign, FiActivity, FiRefreshCw } from 'react-icons/fi';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
     const [message, setMessage] = useState('');
@@ -15,116 +18,159 @@ const AdminDashboard = () => {
         totalRevenue: 0
     });
     const [recentActivity, setRecentActivity] = useState([]);
-    
-    useEffect(() => {
-        const fetchDashboard = async () => {
-            try {
-                setLoading(true);
-                const token = localStorage.getItem('token');
-                
-                // Fetch dashboard statistics from the existing /admin endpoint
-                const response = await axios.get('http://localhost:5000/admin', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                // Update state with fetched data
-                setMessage(response.data.message);
-                
-                // Check if stats and recentActivity exist in the response
-                if (response.data.stats) {
-                    setStats(response.data.stats);
-                }
-                
-                if (response.data.recentActivity) {
-                    setRecentActivity(response.data.recentActivity);
-                }
-            } catch (err) {
-                console.error('Dashboard error:', err);
-                setError(err.response?.data?.message || 'Failed to load admin dashboard');
-            } finally {
-                setLoading(false);
-            }
-        };
-        
-        fetchDashboard();
-    }, []);
-    
-    // Function to format activity message
-    const formatActivityMessage = (activity) => {
-        if (activity.type === 'order') {
-            return `New order #${activity.id} from ${activity.username} (${activity.status})`;
-        } else if (activity.type === 'user') {
-            return `User ${activity.username} registered`;
-        }
-        return 'Unknown activity';
-    };
-    
-    // Function to format date for display
-    const formatActivityDate = (dateString) => {
-        if (!dateString) return 'Recently';
-        
+    const navigate = useNavigate();
+
+    const fetchDashboard = async () => {
         try {
-            const date = new Date(dateString);
-            return formatDistanceToNow(date, { addSuffix: true });
-        } catch (error) {
-            return 'Unknown date';
+            setLoading(true);
+            setError('');
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                toast.error('Authentication required');
+                navigate('/signin');
+                return;
+            }
+
+            // Set the base URL for the API request
+            const baseURL = 'http://localhost:5000';
+            
+            // Fetch dashboard statistics
+            const response = await axios.get(`${baseURL}/admin`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            console.log('Dashboard response:', response.data);
+
+            // Update state with fetched data
+            setMessage(response.data.message || 'Welcome to the admin dashboard');
+
+            // Check if stats exist in the response
+            if (response.data.stats) {
+                // Ensure all stats are numbers
+                const sanitizedStats = {
+                    totalProducts: Number(response.data.stats.totalProducts || 0),
+                    totalUsers: Number(response.data.stats.totalUsers || 0),
+                    totalOrders: Number(response.data.stats.totalOrders || 0),
+                    totalRevenue: Number(response.data.stats.totalRevenue || 0)
+                };
+                setStats(sanitizedStats);
+            }
+
+            if (response.data.recentActivity && Array.isArray(response.data.recentActivity)) {
+                setRecentActivity(response.data.recentActivity);
+            } else {
+                setRecentActivity([]);
+            }
+        } catch (err) {
+            console.error('Dashboard error:', err);
+            
+            // Handle different error scenarios
+            if (err.response) {
+                // The request was made and the server responded with a status code
+                // that falls out of the range of 2xx
+                if (err.response.status === 401 || err.response.status === 403) {
+                    toast.error('You are not authorized to access the admin dashboard');
+                    navigate('/signin');
+                } else {
+                    setError(err.response.data?.message || 'Failed to load admin dashboard');
+                }
+            } else if (err.request) {
+                // The request was made but no response was received
+                setError('No response from server. Please check your connection.');
+            } else {
+                // Something happened in setting up the request
+                setError('Error setting up request: ' + err.message);
+            }
+        } finally {
+            setLoading(false);
         }
     };
-    
+
+    useEffect(() => {
+        fetchDashboard();
+    }, [navigate]);
+
     return (
-        <div className={styles.adminLayout}>
+        <div className={styles.adminDashboard}>
             <AdminNav />
-            
             <div className={styles.dashboardContainer}>
-                <h1>Admin Dashboard</h1>
+                <div className={styles.dashboardHeader}>
+                    <h1>Admin Dashboard</h1>
+                    <button 
+                        className={styles.refreshButton}
+                        onClick={fetchDashboard}
+                        disabled={loading}
+                    >
+                        <FiRefreshCw className={loading ? styles.spinning : ''} />
+                        Refresh
+                    </button>
+                </div>
+
+                {error && (
+                    <div className={styles.error}>
+                        <p>{error}</p>
+                        <button 
+                            className={styles.retryButton}
+                            onClick={fetchDashboard}
+                        >
+                            Retry
+                        </button>
+                    </div>
+                )}
                 
-                {error && <div className={styles.error}>{error}</div>}
-                {message && <div className={styles.message}>{message}</div>}
-                
+                {message && !error && <div className={styles.message}>{message}</div>}
+
                 {loading ? (
                     <div className={styles.loading}>Loading dashboard data...</div>
                 ) : (
-                    <>
-                        <div className={styles.statsGrid}>
-                            <div className={styles.statCard}>
-                                <h3>Total Products</h3>
-                                <p className={styles.statValue}>{stats.totalProducts}</p>
-                            </div>
-                            
-                            <div className={styles.statCard}>
-                                <h3>Total Users</h3>
-                                <p className={styles.statValue}>{stats.totalUsers}</p>
-                            </div>
-                            
-                            <div className={styles.statCard}>
-                                <h3>Total Orders</h3>
-                                <p className={styles.statValue}>{stats.totalOrders}</p>
-                            </div>
-                            
-                            <div className={styles.statCard}>
-                                <h3>Total Revenue</h3>
-                                <p className={styles.statValue}>${stats.totalRevenue.toLocaleString()}</p>
-                            </div>
-                        </div>
-                        
-                        <div className={styles.recentActivity}>
-                            <h2>Recent Activity</h2>
-                            {recentActivity.length > 0 ? (
-                                <div className={styles.activityList}>
-                                    {recentActivity.map((activity, index) => (
-                                        <div key={index} className={styles.activityItem}>
-                                            <p>{formatActivityMessage(activity)}</p>
-                                            <span>{formatActivityDate(activity.date)}</span>
-                                        </div>
-                                    ))}
+                    !error && (
+                        <>
+                            <div className={styles.statsGrid}>
+                                <div className={styles.statCard}>
+                                    <h3><FiPackage style={{ marginRight: '8px' }} />Total Products</h3>
+                                    <p className={styles.statValue}>{stats.totalProducts}</p>
                                 </div>
-                            ) : (
-                                <p className={styles.noActivity}>No recent activity found</p>
-                            )}
-                        </div>
-                    </>
+
+                                <div className={styles.statCard}>
+                                    <h3><FiUsers style={{ marginRight: '8px' }} />Total Users</h3>
+                                    <p className={styles.statValue}>{stats.totalUsers}</p>
+                                </div>
+
+                                <div className={styles.statCard}>
+                                    <h3><FiShoppingCart style={{ marginRight: '8px' }} />Total Orders</h3>
+                                    <p className={styles.statValue}>{stats.totalOrders}</p>
+                                </div>
+
+                                <div className={styles.statCard}>
+                                    <h3><FiDollarSign style={{ marginRight: '8px' }} />Total Revenue</h3>
+                                    <p className={styles.statValue}>${parseFloat(stats.totalRevenue).toFixed(2)}</p>
+                                </div>
+                            </div>
+
+                            <div className={styles.recentActivity}>
+                                <h2><FiActivity style={{ marginRight: '8px' }} />Recent Activity</h2>
+                                {recentActivity.length > 0 ? (
+                                    <div className={styles.activityList}>
+                                        {recentActivity.map((activity, index) => (
+                                            <div key={index} className={styles.activityItem}>
+                                                <p>{activity.description}</p>
+                                                <span>
+                                                    {activity.timestamp ? 
+                                                        formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true }) : 
+                                                        'Recently'}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className={styles.noActivity}>No recent activity to display</div>
+                                )}
+                            </div>
+                        </>
+                    )
                 )}
             </div>
         </div>

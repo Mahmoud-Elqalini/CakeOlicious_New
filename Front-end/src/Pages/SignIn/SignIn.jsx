@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { FiLogIn } from 'react-icons/fi'
 import styles from './SignIn.module.css'
 
 const SignIn = () => {
@@ -56,7 +57,9 @@ const SignIn = () => {
     return (
         <div className={styles.SignIn}>
             <div className={styles.formContainer}>
-                <h2>Sign In</h2>
+                <h2>Welcome Back</h2>
+                <p className={styles.subtitle}>Sign in to your account</p>
+                
                 <form onSubmit={handleSubmit}>
                     <div className={styles.formGroup}>
                         <label htmlFor="username">Username</label>
@@ -64,6 +67,7 @@ const SignIn = () => {
                             type="text"
                             id="username"
                             name="username"
+                            placeholder="Enter your username"
                             value={formData.username}
                             onChange={handleChange}
                             required
@@ -76,6 +80,7 @@ const SignIn = () => {
                             type="password"
                             id="pass_word"
                             name="pass_word"
+                            placeholder="Enter your password"
                             value={formData.pass_word}
                             onChange={handleChange}
                             required
@@ -87,9 +92,18 @@ const SignIn = () => {
                         className={styles.submitButton}
                         disabled={loading}
                     >
-                        {loading ? 'Signing in...' : 'Sign In'}
+                        {loading ? 'Signing in...' : (
+                            <>
+                                <FiLogIn className={styles.loginIcon} />
+                                <span>Sign In</span>
+                            </>
+                        )}
                     </button>
                 </form>
+                
+                <div className={styles.formFooter}>
+                    <p>Don't have an account? <Link to="/signup" className={styles.signupLink}>Sign Up</Link></p>
+                </div>
             </div>
         </div>
     )

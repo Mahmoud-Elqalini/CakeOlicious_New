@@ -1,0 +1,137 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(74, 44, 42, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modalContent {
+  background-color: var(--tertiary-color);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  padding: 2.5rem;
+  width: 90%;
+  max-width: 420px;
+  animation: slideUp 0.4s ease-out;
+}
+
+.closeButton {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--quinary-color);
+  transition: color 0.3s ease;
+}
+
+.closeButton:hover {
+  color: var(--primary-color);
+}
+
+.title {
+  font-family: var(--primary-font);
+  font-size: 32px;
+  margin-bottom: 8px;
+  color: var(--primary-color);
+  text-align: center;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--quinary-color);
+  margin-bottom: 25px;
+  font-family: var(--tertiary-font);
+}
+
+.formGroup {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--primary-color);
+  font-family: var(--tertiary-font);
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  font-family: var(--tertiary-font);
+  background-color: #f9f9f9;
+}
+
+.formGroup input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(74, 44, 42, 0.1);
+  outline: none;
+  background-color: white;
+}
+
+.submitButton {
+  width: 100%;
+  padding: 14px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--tertiary-font);
+  margin-top: 10px;
+}
+
+.submitButton:hover {
+  background-color: var(--secondary-color);
+}
+
+.submitButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.loginIcon {
+  font-size: 18px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

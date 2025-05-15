@@ -1,4 +1,4 @@
-/* Shahd Elwan */
+
 :root {
   --primary-color: #4a2c2a;
   --secondary-color: #58150a;
@@ -12,15 +12,15 @@
   --tertiary-font: "Open Sans", sans-serif;
 }
 
-/* Selection color */
+
 ::selection {
-  background-color: #f5e8c9; /* Beige color */
-  color: var(--primary-color); /* Dark text for contrast */
+  background-color: #f5e8c9; 
+  color: var(--primary-color); 
 }
 
-/* Scrollbar styles */
+
 ::-webkit-scrollbar {
-  width: 8px; /* Slightly thinner */
+  width: 8px; 
 }
 
 ::-webkit-scrollbar-track {
@@ -28,11 +28,26 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(74, 44, 42, 0.7); /* Lighter primary color */
+  background: rgba(74, 44, 42, 0.7); 
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(88, 21, 10, 0.7); /* Lighter secondary color */
+  background: rgba(88, 21, 10, 0.7); 
 }
 
+body {
+  margin: 0 !important;
+  padding: 0;
+  overflow-x: hidden;
+}
+input:-webkit-autofill,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  background-color: #e8f0fe !important;
+  -webkit-box-shadow: 0 0 0px 1000px #e8f0fe inset !important;
+}
+
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #e8f0fe inset !important;
+}

@@ -1,4 +1,4 @@
-/* Shahd Elwan */
+
 .bestSellers {
   padding: 80px 0;
   background-color: var(--quaternary-color);
@@ -257,7 +257,7 @@
   color: white;
 }
 
-/* Responsive adjustments */
+
 @media (max-width: 1024px) {
   .productsGrid {
     grid-template-columns: repeat(3, 1fr);
