@@ -1,44 +1,29 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, url_for
 from backend.extensions import db
-from backend.models import User, Product
-import json
 from sqlalchemy.sql import text
 from sqlalchemy.exc import SQLAlchemyError
 from flask_wtf import FlaskForm
 from wtforms import StringField, FloatField, IntegerField
 from wtforms.validators import (
     DataRequired,
-    Length,
     NumberRange,
-    Regexp,
-    ValidationError,
 )
 import logging
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash
 from decimal import Decimal
 from backend.routes.auth import token_required
 import os
 from werkzeug.utils import secure_filename
 import uuid
-import jwt
 from datetime import datetime
 
 admin_bp = Blueprint("admin", __name__)
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 def check_admin(current_user):
     return current_user.user_role.lower() == "admin"
-
-def parse_json_result(result):
-    if result and result[0][0]:
-        try:
-            return json.loads(result[0][0])
-        except json.JSONDecodeError as e:
-            logger.error(f"Error parsing JSON data: {str(e)}")
-            return []
-    return []
 
 # Form classes
 class AddProductForm(FlaskForm):
@@ -108,127 +93,62 @@ def upload_image(current_user):
             return jsonify({"success": False, "message": "No file part"}), 400
 
         file = request.files["image"]
+        product_name = request.form.get("product_name", None)
 
         if file.filename == "":
             logger.warning("No selected file")
             return jsonify({"success": False, "message": "No selected file"}), 400
 
+        # Validate file size
+        MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB limit
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        if file_size > MAX_FILE_SIZE:
+            return jsonify({"success": False, "message": "File too large"}), 400
+        file.seek(0)
+
+        # Validate file type
         allowed_extensions = {"png", "jpg", "jpeg", "gif", "webp"}
-        file_ext = (
-            file.filename.rsplit(".", 1)[1].lower() if "." in file.filename else ""
-        )
+        file_ext = file.filename.rsplit(".", 1)[1].lower() if "." in file.filename else ""
         if file_ext not in allowed_extensions:
             logger.warning(f"Invalid file type: {file_ext}")
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "message": f'Invalid file type. Allowed: {", ".join(allowed_extensions)}'
-                    }
-                ),
-                400,
-            )
+            return jsonify({"success": False, "message": f"Invalid file type. Allowed: {', '.join(allowed_extensions)}"}), 400
+
+        # Validate content type
+        if file.content_type not in {"image/png", "image/jpeg", "image/gif", "image/webp"}:
+            return jsonify({"success": False, "message": "Invalid image content type"}), 400
 
         filename = secure_filename(file.filename)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        unique_filename = f"{timestamp}_{uuid.uuid4().hex[:8]}_{filename}"
+        if product_name:
+            product_slug = secure_filename(product_name.lower().replace(" ", "-"))
+            unique_filename = f"{product_slug}{timestamp}{uuid.uuid4().hex[:8]}.{file_ext}"
+        else:
+            unique_filename = f"{timestamp}{uuid.uuid4().hex[:8]}.{file_ext}"
 
-        upload_folder = os.path.join(current_app.root_path, "static", "uploads")
+        upload_folder = os.path.abspath(os.path.join(current_app.root_path, "static", "uploads"))
         os.makedirs(upload_folder, exist_ok=True)
 
-        file_path = os.path.join(upload_folder, unique_filename)
-        file.save(file_path)
+        file_path = os.path.abspath(os.path.join(upload_folder, unique_filename))
+        if not file_path.startswith(upload_folder):
+            return jsonify({"success": False, "message": "Invalid file path"}), 400
 
-        logger.info(f"File saved to {file_path}")
-
-        image_url = f"/static/uploads/{unique_filename}"
-        full_url = f"http://localhost:5000{image_url}"
-
-        logger.info(f"Image URL: {image_url}")
-        logger.info(f"Full URL: {full_url}")
-
-        return (
-            jsonify(
-                {
-                    "success": True,
-                    "message": "Image uploaded successfully",
-                    "imageUrl": image_url,
-                    "fullUrl": full_url,
-                    "filename": unique_filename,
-                }
-            ),
-            201,
-        )
-
-    except Exception as e:
-        logger.error(f"Error uploading image: {str(e)}")
-        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
-
-@admin_bp.route("/admin/upload", methods=["POST"])
-@token_required
-def upload_product_image(current_user):
-    if not check_admin(current_user):
-        return jsonify({"message": "Unauthorized access"}), 403
-
-    try:
-        logger.info("Processing product image upload request")
-
-        if "image" not in request.files:
-            logger.warning("No file part in request")
-            return jsonify({"success": False, "message": "No file part"}), 400
-
-        file = request.files["image"]
-        product_name = request.form.get("product_name", "unknown_product")
-
-        if file.filename == "":
-            logger.warning("No selected file")
-            return jsonify({"success": False, "message": "No selected file"}), 400
-
-        allowed_extensions = {"png", "jpg", "jpeg", "gif", "webp"}
-        file_ext = (
-            file.filename.rsplit(".", 1)[1].lower() if "." in file.filename else ""
-        )
-        if file_ext not in allowed_extensions:
-            logger.warning(f"Invalid file type: {file_ext}")
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "message": f'Invalid file type. Allowed: {", ".join(allowed_extensions)}'
-                    }
-                ),
-                400,
-            )
-
-        filename = secure_filename(file.filename)
-        product_slug = secure_filename(product_name.lower().replace(" ", "-"))
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        unique_filename = (
-            f"{product_slug}_{timestamp}_{uuid.uuid4().hex[:8]}.{file_ext}"
-        )
-
-        upload_folder = os.path.join("static", "uploads")
-        os.makedirs(upload_folder, exist_ok=True)
-
-        file_path = os.path.join(upload_folder, unique_filename)
         file.save(file_path)
 
         image_url = f"/static/uploads/{unique_filename}"
-        full_url = f"http://localhost:5000{image_url}"
+        full_url = url_for("static", filename=f"uploads/{unique_filename}", _external=True)
 
-        return (
-            jsonify(
-                {
-                    "success": True,
-                    "message": "Image uploaded successfully",
-                    "productName": product_name,
-                    "imageUrl": full_url,
-                    "relativePath": image_url,
-                    "filename": unique_filename,
-                }
-            ),
-            201,
-        )
+        response = {
+            "success": True,
+            "message": "Image uploaded successfully",
+            "imageUrl": image_url,
+            "fullUrl": full_url,
+            "filename": unique_filename
+        }
+        if product_name:
+            response["productName"] = product_name
+
+        return jsonify(response), 201
 
     except Exception as e:
         logger.error(f"Error uploading image: {str(e)}")
@@ -256,46 +176,37 @@ def admin_dashboard(current_user):
         # Get product count
         try:
             product_count_result = db.session.execute(text("SELECT COUNT(*) FROM products")).scalar()
-            product_count = int(product_count_result) if product_count_result is not None else 0
-            response_data["stats"]["totalProducts"] = product_count
-            logger.info(f"Product count: {product_count}")
+            response_data["stats"]["totalProducts"] = int(product_count_result) if product_count_result is not None else 0
+            logger.info(f"Product count: {response_data['stats']['totalProducts']}")
         except Exception as e:
             logger.error(f"Error getting product count: {str(e)}")
-            try:
-                from sqlalchemy import text
-                product_count_result = db.session.execute(text("SELECT COUNT(*) FROM products")).scalar()
-                product_count = int(product_count_result) if product_count_result is not None else 0
-                response_data["stats"]["totalProducts"] = product_count
-                logger.info(f"Product count (alternative method): {product_count}")
-            except Exception as inner_e:
-                logger.error(f"Error getting product count with alternative method: {str(inner_e)}")
+            response_data["stats"]["totalProducts"] = 0
         
         # Get user count
         try:
             user_count_result = db.session.execute(text("SELECT COUNT(*) FROM users")).scalar()
-            user_count = int(user_count_result) if user_count_result is not None else 0
-            response_data["stats"]["totalUsers"] = user_count
-            logger.info(f"User count: {user_count}")
+            response_data["stats"]["totalUsers"] = int(user_count_result) if user_count_result is not None else 0
+            logger.info(f"User count: {response_data['stats']['totalUsers']}")
         except Exception as e:
             logger.error(f"Error getting user count: {str(e)}")
+            response_data["stats"]["totalUsers"] = 0
         
         # Get order count and revenue
         try:
             order_count_result = db.session.execute(text("SELECT COUNT(*) FROM orders")).scalar()
-            order_count = int(order_count_result) if order_count_result is not None else 0
-            response_data["stats"]["totalOrders"] = order_count
-            logger.info(f"Order count: {order_count}")
+            response_data["stats"]["totalOrders"] = int(order_count_result) if order_count_result is not None else 0
+            logger.info(f"Order count: {response_data['stats']['totalOrders']}")
             
             revenue_result = db.session.execute(text("SELECT COALESCE(SUM(total_price), 0) FROM orders")).scalar()
-            total_revenue = float(revenue_result) if revenue_result is not None else 0
-            response_data["stats"]["totalRevenue"] = total_revenue
-            logger.info(f"Total revenue: {total_revenue}")
+            response_data["stats"]["totalRevenue"] = float(revenue_result) if revenue_result is not None else 0
+            logger.info(f"Total revenue: {response_data['stats']['totalRevenue']}")
         except Exception as e:
             logger.error(f"Error getting order stats: {str(e)}")
+            response_data["stats"]["totalOrders"] = 0
+            response_data["stats"]["totalRevenue"] = 0
         
         # Get recent activity
         try:
-            # Get recent orders
             recent_orders_query = text("""
                 SELECT o.id, o.total_price, o.created_at, u.username 
                 FROM orders o
@@ -313,7 +224,6 @@ def admin_dashboard(current_user):
                     "timestamp": created_at.isoformat() if created_at else datetime.now().isoformat()
                 })
                 
-            # Get recent users
             recent_users_query = text("""
                 SELECT id, username, created_at
                 FROM users
@@ -330,7 +240,6 @@ def admin_dashboard(current_user):
                     "timestamp": created_at.isoformat() if created_at else datetime.now().isoformat()
                 })
                 
-            # Sort all activities by timestamp
             response_data["recentActivity"] = sorted(
                 response_data["recentActivity"],
                 key=lambda x: x["timestamp"],
@@ -344,20 +253,10 @@ def admin_dashboard(current_user):
     except SQLAlchemyError as e:
         db.session.rollback()
         logger.error(f"SQLAlchemy error fetching dashboard stats: {str(e)}")
-        return (
-            jsonify(
-                {"message": "Error fetching dashboard statistics", "error": str(e)}
-            ),
-            500,
-        )
+        return jsonify({"message": "Error fetching dashboard statistics", "error": str(e)}), 500
     except Exception as e:
         logger.error(f"General error fetching dashboard stats: {str(e)}")
-        return (
-            jsonify(
-                {"message": "Error fetching dashboard statistics", "error": str(e)}
-            ),
-            500,
-        )
+        return jsonify({"message": "Error fetching dashboard statistics", "error": str(e)}), 500
 
 @admin_bp.route("/admin/products", methods=["GET"])
 @token_required
@@ -369,7 +268,6 @@ def get_admin_products(current_user):
     try:
         logger.debug("Fetching all products for admin dashboard")
         
-        # Use a direct SQL query instead of stored procedure
         query = text("""
             SELECT p.id, p.product_name, p.product_description, p.price, p.stock, 
                    p.category_id, c.category_name, p.image_url, p.discount, p.is_active
@@ -425,7 +323,6 @@ def add_product(current_user):
         return jsonify({"message": "Validation error", "errors": errors}), 400
 
     try:
-        # Use direct SQL insert instead of stored procedure
         query = text("""
             INSERT INTO products (product_name, product_description, price, stock, category_id, image_url, discount, is_active)
             VALUES (:product_name, :description, :price, :stock, :category_id, :image_url, :discount, 1)
@@ -473,7 +370,6 @@ def delete_product(current_user, product_id):
         return jsonify({"message": "Unauthorized access"}), 403
     
     try:
-        # Check if product exists
         product_result = db.session.execute(
             text("SELECT product_name FROM products WHERE id = :product_id"),
             {"product_id": product_id}
@@ -485,7 +381,6 @@ def delete_product(current_user, product_id):
         
         product_name = product_result[0]
         
-        # Delete product
         delete_query = text("""
             DELETE FROM products 
             WHERE id = :product_id
@@ -509,9 +404,9 @@ def delete_product(current_user, product_id):
         logger.error(f"General error deleting product: {str(e)}")
         return jsonify({"message": "Error deleting product", "error": str(e)}), 500
 
-@admin_bp.route("/admin/product/update-price/<int:product_id>", methods=["POST"])
+@admin_bp.route("/admin/product/update/<int:product_id>", methods=["PUT"])
 @token_required
-def update_product_price(current_user, product_id):
+def update_product(current_user, product_id):
     if not check_admin(current_user):
         logger.warning(f"Unauthorized access attempt for user_id: {current_user.id}")
         return jsonify({"message": "Unauthorized access"}), 403
@@ -520,140 +415,76 @@ def update_product_price(current_user, product_id):
         logger.error("Invalid JSON format in request")
         return jsonify({"message": "Invalid JSON format"}), 400
 
-    form = UpdatePriceForm(data=request.get_json(force=True))
+    data = request.get_json(force=True)
 
-    if not form.validate():
-        errors = {field.name: field.errors for field in form}
-        logger.debug(f"Validation errors: {errors}")
-        return jsonify({"message": "Validation error", "errors": errors}), 400
+    allowed_fields = [
+        "product_name",
+        "product_description",
+        "price",
+        "stock",
+        "category_id",
+        "image_url",
+        "discount",
+        "is_active",
+    ]
 
-    
-    product_name_result = db.session.execute(
-        "SELECT product_name FROM products WHERE id = :product_id",
-        {"product_id": product_id},
-    ).fetchone()
+    update_data = {key: data[key] for key in allowed_fields if key in data}
 
-    if not product_name_result:
-        logger.warning(f"Product not found for ID: {product_id}")
-        return jsonify({"message": "Product not found"}), 404
-
-    product_name = product_name_result[0]
+    if not update_data:
+        return jsonify({"message": "No valid fields provided for update"}), 400
 
     try:
-        query = text(
-        )
-        result = db.session.execute(
-            query, {"product_name": product_name, "new_price": form.new_price.data}
-        )
+        product_name_result = db.session.execute(
+            text("SELECT product_name FROM products WHERE id = :product_id"),
+            {"product_id": product_id},
+        ).fetchone()
 
-        logger.debug("Fetching result...")
-        row = result.fetchone()
-        if row:
-            status = row["status"]
-            message = row["message"]
-            logger.debug(f"Status: {status}, Message: {message}")
-            if status == "success":
-                db.session.commit()
-                logger.info(f"Price updated for product {product_name}")
-                return jsonify({"message": message}), 200
-            else:
-                db.session.rollback()
-                return jsonify({"message": message}), 400
-        else:
-            db.session.rollback()
-            logger.error("Error updating price: No response from database")
-            return (
-                jsonify({"message": "Error updating price: No response from database"}),
-                500,
-            )
+        if not product_name_result:
+            logger.warning(f"Product not found for ID: {product_id}")
+            return jsonify({"message": "Product not found"}), 404
+
+        product_name = product_name_result[0]
+
+        sp_params = {
+            "product_id": product_id,
+            "product_name": update_data.get("product_name"),
+            "product_description": update_data.get("product_description"),
+            "price": update_data.get("price"),
+            "stock": update_data.get("stock"),
+            "category_id": update_data.get("category_id"),
+            "image_url": update_data.get("image_url"),
+            "discount": update_data.get("discount"),
+            "is_active": update_data.get("is_active"),
+        }
+
+        db.session.execute(
+            text("""
+                EXEC UpdateProduct
+                    @product_id=:product_id,
+                    @product_name=:product_name,
+                    @product_description=:product_description,
+                    @price=:price,
+                    @stock=:stock,
+                    @category_id=:category_id,
+                    @image_url=:image_url,
+                    @discount=:discount,
+                    @is_active=:is_active
+            """),
+            sp_params
+        )
+        db.session.commit()
+
+        logger.info(f"Product '{product_name}' updated successfully via stored procedure")
+        return jsonify({"message": f"Product '{product_name}' updated successfully"}), 200
 
     except SQLAlchemyError as e:
         db.session.rollback()
-        logger.error(f"SQLAlchemy error updating price: {str(e)}")
-        return jsonify({"message": "Error updating price", "error": str(e)}), 500
+        logger.error(f"SQLAlchemy error updating product: {str(e)}")
+        return jsonify({"message": "Error updating product", "error": str(e)}), 500
     except Exception as e:
         db.session.rollback()
-        logger.error(f"General error updating price: {str(e)}")
-        return jsonify({"message": "Error updating price", "error": str(e)}), 500
-
-
-
-
-
-@admin_bp.route("/admin/product/update-discount/<int:product_id>", methods=["POST"])
-@token_required
-def update_product_discount(current_user, product_id):
-    
-    if not check_admin(current_user):
-        logger.warning(f"Unauthorized access attempt for user_id: {current_user.id}")
-        return jsonify({"message": "Unauthorized access"}), 403
-
-    if not request.is_json:
-        logger.error("Invalid JSON format in request")
-        return jsonify({"message": "Invalid JSON format"}), 400
-
-    form = UpdateDiscountForm(data=request.get_json(force=True))
-
-    if not form.validate():
-        errors = {field.name: field.errors for field in form}
-        logger.debug(f"Validation errors: {errors}")
-        return jsonify({"message": "Validation error", "errors": errors}), 400
-
-    
-    product_name_result = db.session.execute(
-        "SELECT product_name FROM products WHERE id = :product_id",
-        {"product_id": product_id},
-    ).fetchone()
-
-    if not product_name_result:
-        logger.warning(f"Product not found for ID: {product_id}")
-        return jsonify({"message": "Product not found"}), 404
-
-    product_name = product_name_result[0]
-
-    try:
-        query = text(
-        )
-        result = db.session.execute(
-            query,
-            {"product_name": product_name, "new_discount": form.new_discount.data},
-        )
-
-        logger.debug("Fetching result...")
-        row = result.fetchone()
-        if row:
-            status = row["status"]
-            message = row["message"]
-            logger.debug(f"Status: {status}, Message: {message}")
-            if status == "success":
-                db.session.commit()
-                logger.info(f"Discount updated for product {product_name}")
-                return jsonify({"message": message}), 200
-            else:
-                db.session.rollback()
-                return jsonify({"message": message}), 400
-        else:
-            db.session.rollback()
-            logger.error("Error updating discount: No response from database")
-            return (
-                jsonify(
-                    {"message": "Error updating discount: No response from database"}
-                ),
-                500,
-            )
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"SQLAlchemy error updating discount: {str(e)}")
-        return jsonify({"message": "Error updating discount", "error": str(e)}), 500
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"General error updating discount: {str(e)}")
-        return jsonify({"message": "Error updating discount", "error": str(e)}), 500
-
-
-
-
+        logger.error(f"General error updating product: {str(e)}")
+        return jsonify({"message": "Error updating product", "error": str(e)}), 500
 
 @admin_bp.route("/admin/orders", methods=["GET"])
 @token_required
@@ -665,7 +496,6 @@ def manage_orders(current_user):
     try:
         logger.debug("Fetching orders...")
         
-        # Use direct SQL query instead of stored procedure
         query = text("""
             SELECT o.id, o.user_id, u.username, u.full_name, u.user_address, 
                    u.phone_number, o.total_price, o.status, o.created_at
@@ -696,12 +526,6 @@ def manage_orders(current_user):
     except SQLAlchemyError as e:
         logger.error(f"SQLAlchemy error fetching orders: {str(e)}")
         return jsonify({"message": "Error fetching orders", "error": str(e)}), 500
-    except Exception as e:
-        logger.error(f"General error fetching orders: {str(e)}")
-        return jsonify({"message": "Error fetching orders", "error": str(e)}), 500
-
-
-
 
 @admin_bp.route("/admin/order/<int:order_id>", methods=["GET"])
 @token_required
@@ -713,7 +537,6 @@ def get_order_details(current_user, order_id):
     try:
         logger.debug(f"Fetching details for order ID: {order_id}")
         
-        # Get order details
         order_query = text("""
             SELECT o.id, o.user_id, u.username, u.full_name, u.user_address, 
                    u.phone_number, o.total_price, o.status, o.created_at
@@ -729,7 +552,6 @@ def get_order_details(current_user, order_id):
             logger.warning(f"Order not found for ID: {order_id}")
             return jsonify({"message": "Order not found"}), 404
         
-        # Get order items
         items_query = text("""
             SELECT p.id, p.product_name, oi.quantity, oi.price, (oi.quantity * oi.price) as subtotal, p.image_url
             FROM order_items oi
@@ -772,7 +594,6 @@ def get_order_details(current_user, order_id):
         logger.error(f"General error fetching order details: {str(e)}")
         return jsonify({"message": "Error fetching order details", "error": str(e)}), 500
 
-
 @admin_bp.route("/admin/product/toggle-visibility/<int:product_id>", methods=["POST"])
 @token_required
 def toggle_product_visibility(current_user, product_id):
@@ -791,7 +612,6 @@ def toggle_product_visibility(current_user, product_id):
         return jsonify({"message": "Missing is_active parameter"}), 400
     
     try:
-        # Check if product exists
         product_result = db.session.execute(
             text("SELECT product_name FROM products WHERE id = :product_id"),
             {"product_id": product_id}
@@ -803,7 +623,6 @@ def toggle_product_visibility(current_user, product_id):
         
         product_name = product_result[0]
         
-        # Update product visibility
         update_query = text("""
             UPDATE products 
             SET is_active = :is_active 
@@ -838,7 +657,6 @@ def get_admin_users(current_user):
     try:
         logger.debug("Fetching all users for admin dashboard")
         
-        # Use a direct SQL query to get all users except the current admin
         query = text("""
             SELECT id, username, email, full_name, user_address, phone_number, user_role
             FROM users
@@ -850,7 +668,6 @@ def get_admin_users(current_user):
 
         formatted_users = []
         for row in users:
-            # Skip the deleted_user placeholder account from the results
             if row[1] == 'deleted_user':
                 continue
                 
@@ -876,29 +693,27 @@ def get_admin_users(current_user):
 
 @admin_bp.route("/admin/user/<int:user_id>", methods=["GET"])
 @token_required
-def get_user_details(current_user, user_id):
+def get_user_details(current_user, origin_user_id):
     if not check_admin(current_user):
         logger.warning(f"Unauthorized access attempt for user_id: {current_user.id}")
         return jsonify({"message": "Unauthorized access"}), 403
 
     try:
-        logger.debug(f"Fetching details for user ID: {user_id}")
+        logger.debug(f"Fetching details for user ID: {origin_user_id}")
         
-        # Get user details
         user_query = text("""
             SELECT id, username, email, full_name, user_address, phone_number, user_role
             FROM users
             WHERE id = :user_id
         """)
         
-        user_result = db.session.execute(user_query, {"user_id": user_id})
+        user_result = db.session.execute(user_query, {"user_id": origin_user_id})
         user_data = user_result.fetchone()
         
         if not user_data:
-            logger.warning(f"User not found for ID: {user_id}")
+            logger.warning(f"User not found for ID: {origin_user_id}")
             return jsonify({"message": "User not found"}), 404
         
-        # Get user's orders
         orders_query = text("""
             SELECT id, total_price, status, created_at
             FROM orders
@@ -906,7 +721,7 @@ def get_user_details(current_user, user_id):
             ORDER BY created_at DESC
         """)
         
-        orders_result = db.session.execute(orders_query, {"user_id": user_id})
+        orders_result = db.session.execute(orders_query, {"user_id": origin_user_id})
         
         user_orders = []
         for order in orders_result:
@@ -950,14 +765,12 @@ def update_user(current_user, user_id):
     
     data = request.get_json()
     
-    # Validate required fields
     required_fields = ["username", "email", "full_name"]
     for field in required_fields:
         if field not in data or not data[field]:
             return jsonify({"message": f"Missing required field: {field}"}), 400
     
     try:
-        # Check if user exists
         user_result = db.session.execute(
             text("SELECT username FROM users WHERE id = :user_id"),
             {"user_id": user_id}
@@ -967,7 +780,6 @@ def update_user(current_user, user_id):
             logger.warning(f"User not found for ID: {user_id}")
             return jsonify({"message": "User not found"}), 404
         
-        # Check if username is already taken by another user
         if data.get("username") != user_result[0]:
             username_check = db.session.execute(
                 text("SELECT id FROM users WHERE username = :username AND id != :user_id"),
@@ -977,7 +789,6 @@ def update_user(current_user, user_id):
             if username_check:
                 return jsonify({"message": "Username already taken"}), 400
         
-        # Check if email is already taken by another user
         email_check = db.session.execute(
             text("SELECT id FROM users WHERE email = :email AND id != :user_id"),
             {"email": data["email"], "user_id": user_id}
@@ -986,7 +797,6 @@ def update_user(current_user, user_id):
         if email_check:
             return jsonify({"message": "Email already taken"}), 400
         
-        # Update user
         update_query = text("""
             UPDATE users 
             SET username = :username, 
@@ -1011,7 +821,6 @@ def update_user(current_user, user_id):
             }
         )
         
-        # Update password if provided
         if "password" in data and data["password"]:
             password_hash = generate_password_hash(data["password"])
             
@@ -1047,7 +856,6 @@ def delete_user(current_user, user_id):
         return jsonify({"message": "Unauthorized access"}), 403
     
     try:
-        # Check if user exists
         user_result = db.session.execute(
             text("SELECT username, user_role FROM users WHERE id = :user_id"),
             {"user_id": user_id}
@@ -1059,26 +867,23 @@ def delete_user(current_user, user_id):
         
         username, user_role = user_result
         
-        # Prevent deletion of admin users
         if user_role == "Admin":
             logger.warning(f"Attempt to delete admin user: {username}")
             return jsonify({"message": "Cannot delete admin users"}), 403
         
-        # Prevent self-deletion
         if user_id == current_user.id:
             logger.warning(f"User attempted to delete themselves: {username}")
             return jsonify({"message": "Cannot delete your own account"}), 403
         
         logger.debug(f"Completely deleting user {username} (ID: {user_id}) and all associated data")
         
-        # Delete user's reviews
         try:
             delete_reviews_query = text("""
                 DELETE FROM product_reviews
                 WHERE user_id = :user_id
             """)
             
-            result = db.session.execute(
+            db.session.execute(
                 delete_reviews_query,
                 {"user_id": user_id}
             )
@@ -1087,14 +892,13 @@ def delete_user(current_user, user_id):
             logger.error(f"Error deleting reviews: {str(e)}")
             return jsonify({"message": "Error deleting user reviews", "error": str(e)}), 500
         
-        # Delete user's cart items
         try:
             delete_cart_query = text("""
                 DELETE FROM cart
                 WHERE user_id = :user_id
             """)
             
-            result = db.session.execute(
+            db.session.execute(
                 delete_cart_query,
                 {"user_id": user_id}
             )
@@ -1103,9 +907,7 @@ def delete_user(current_user, user_id):
             logger.error(f"Error deleting cart items: {str(e)}")
             return jsonify({"message": "Error deleting user cart items", "error": str(e)}), 500
         
-        # Delete user's order items and orders
         try:
-            # First get all order IDs for this user
             order_ids_query = text("""
                 SELECT id FROM orders
                 WHERE user_id = :user_id
@@ -1118,7 +920,6 @@ def delete_user(current_user, user_id):
             
             order_ids = [row[0] for row in order_ids_result]
             
-            # Delete order items for each order
             if order_ids:
                 for order_id in order_ids:
                     delete_order_items_query = text("""
@@ -1131,7 +932,6 @@ def delete_user(current_user, user_id):
                         {"order_id": order_id}
                     )
                 
-                # Delete the orders
                 delete_orders_query = text("""
                     DELETE FROM orders
                     WHERE user_id = :user_id
@@ -1147,7 +947,6 @@ def delete_user(current_user, user_id):
             logger.error(f"Error deleting orders: {str(e)}")
             return jsonify({"message": "Error deleting user orders", "error": str(e)}), 500
         
-        # Finally delete the user
         try:
             delete_user_query = text("""
                 DELETE FROM users
@@ -1189,14 +988,12 @@ def create_user(current_user):
     
     data = request.get_json()
     
-    # Validate required fields
     required_fields = ["username", "email", "full_name", "password"]
     for field in required_fields:
         if field not in data or not data[field]:
             return jsonify({"message": f"Missing required field: {field}"}), 400
     
     try:
-        # Check if username is already taken
         username_check = db.session.execute(
             text("SELECT id FROM users WHERE username = :username"),
             {"username": data["username"]}
@@ -1205,7 +1002,6 @@ def create_user(current_user):
         if username_check:
             return jsonify({"message": "Username already taken"}), 400
         
-        # Check if email is already taken
         email_check = db.session.execute(
             text("SELECT id FROM users WHERE email = :email"),
             {"email": data["email"]}
@@ -1214,10 +1010,8 @@ def create_user(current_user):
         if email_check:
             return jsonify({"message": "Email already taken"}), 400
         
-        # Hash the password
         password_hash = generate_password_hash(data["password"])
         
-        # Create new user
         insert_query = text("""
             INSERT INTO users (username, email, pass_word, full_name, user_address, phone_number, user_role)
             VALUES (:username, :email, :password, :full_name, :user_address, :phone_number, :user_role)
@@ -1255,3 +1049,5 @@ def create_user(current_user):
         db.session.rollback()
         logger.error(f"General error creating user: {str(e)}")
         return jsonify({"message": "Error creating user", "error": str(e)}), 500
+    
+# mahmoud

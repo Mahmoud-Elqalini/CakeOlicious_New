@@ -30,6 +30,7 @@ CREATE TABLE products (
     category_id INT NOT NULL,
     image_url VARCHAR(255),
     discount DECIMAL(5, 2) DEFAULT 0,
+    is_active BIT NOT NULL DEFAULT 1,
     FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 

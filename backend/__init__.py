@@ -1,5 +1,9 @@
 from flask import Flask, send_from_directory
 from flask_migrate import Migrate
+from flask_cors import CORS
+from dotenv import load_dotenv
+import os
+
 from backend.extensions import db
 from backend.routes.auth import auth_bp
 from backend.routes.orders import order_bp
@@ -9,10 +13,9 @@ from backend.routes.payments import payment_bp
 from backend.routes.checkout import checkout_bp
 from backend.routes.admin import admin_bp
 from backend.routes.uploads import upload_bp
-from flask_cors import CORS
-import os
 
 def create_app():
+    load_dotenv()  
     app = Flask(__name__, 
                 template_folder="../frontend/templates", 
                 static_folder="static")
@@ -35,13 +38,12 @@ def create_app():
     @app.route('/<path:path>', methods=['OPTIONS'])
     def handle_options(path):
         return '', 200
-    
-    app.config.from_object('backend.config.config')
-    
+
+    app.config.from_object('backend.config.config.Config')
+
     db.init_app(app)
-    
     Migrate(app, db)
-    
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(order_bp)
     app.register_blueprint(product_bp)
@@ -50,8 +52,10 @@ def create_app():
     app.register_blueprint(checkout_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(upload_bp)
-    
+
     with app.app_context():
         db.create_all()
-    
+
     return app
+
+# mahmoud
