@@ -563,7 +563,7 @@ const AdminProducts = () => {
 
             if (editingProduct) {
                 // Update existing product
-                await axios.put(
+                await axios.post(
                     `http://localhost:5000/admin/product/update/${editingProduct.id}`,
                     formData,
                     {
@@ -1244,4 +1244,3 @@ const AdminProducts = () => {
 };
 
 export default AdminProducts;
-

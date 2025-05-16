@@ -42,14 +42,7 @@ def create_app():
     
     Migrate(app, db)
     
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(order_bp)
-    app.register_blueprint(product_bp)
-    app.register_blueprint(cart_bp)
-    app.register_blueprint(payment_bp)
-    app.register_blueprint(checkout_bp)
-    app.register_blueprint(admin_bp)
-    app.register_blueprint(upload_bp)
+    
     
     with app.app_context():
         db.create_all()

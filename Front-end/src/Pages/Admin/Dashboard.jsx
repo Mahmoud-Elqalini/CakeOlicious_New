@@ -8,6 +8,9 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
+    console.log("AdminDashboard component rendering");
+    console.log("Styles loaded:", styles); // Check if styles are loading properly
+    
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
@@ -21,10 +24,12 @@ const AdminDashboard = () => {
     const navigate = useNavigate();
 
     const fetchDashboard = async () => {
+        console.log("Fetching dashboard data...");
         try {
             setLoading(true);
             setError('');
             const token = localStorage.getItem('token');
+            console.log("Token retrieved:", token ? "Token exists" : "No token found");
             
             if (!token) {
                 toast.error('Authentication required');
@@ -34,6 +39,7 @@ const AdminDashboard = () => {
 
             // Set the base URL for the API request
             const baseURL = 'http://localhost:5000';
+            console.log("Making API request to:", `${baseURL}/admin`);
             
             // Fetch dashboard statistics
             const response = await axios.get(`${baseURL}/admin`, {
@@ -94,19 +100,24 @@ const AdminDashboard = () => {
     }, [navigate]);
 
     return (
-        <div className={styles.adminDashboard}>
+        <div className={styles.adminLayout || "adminLayout"}>
             <AdminNav />
-            <div className={styles.dashboardContainer}>
-                <div className={styles.dashboardHeader}>
+            <div className={styles.dashboardContainer || "dashboardContainer"}>
+                <div className={styles.dashboardHeader || "dashboardHeader"}>
                     <h1>Admin Dashboard</h1>
                     <button 
-                        className={styles.refreshButton}
+                        className={styles.refreshButton || "refreshButton"}
                         onClick={fetchDashboard}
                         disabled={loading}
                     >
-                        <FiRefreshCw className={loading ? styles.spinning : ''} />
+                        <FiRefreshCw className={loading ? (styles.spinning || "spinning") : ''} />
                         Refresh
                     </button>
+                </div>
+
+                {}
+                <div style={{padding: "20px", backgroundColor: "#f8d7da", color: "#721c24", marginBottom: "20px"}}>
+                    Dashboard is loading... If you see this message, the component is rendering.
                 </div>
 
                 {error && (
@@ -178,4 +189,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
