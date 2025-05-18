@@ -15,6 +15,7 @@ const Account = lazy(() => import('./Pages/Account/Account'))
 import ProtectedRoute from './Components/ProtectedRoute/ProtectedRoute'
 import ErrorBoundary from './Components/ErrorBoundary/ErrorBoundary'
 import AdminUsers from './Pages/Admin/Users/AdminUsers'
+import ContactUs from './Components/ContactUs/ContactUs'
 
 function App() {
   const [message, setMessage] = useState('');
@@ -45,6 +46,7 @@ function App() {
     <Router>
       <ErrorBoundary>
         <Routes>
+          
           
           <Route
             path="/admin/dashboard"
@@ -109,6 +111,14 @@ function App() {
           } />
 
           {}
+          <Route path="/contact" element={
+            <Layout>
+            <Suspense fallback ={<div className="loading-spinner">Loading...</div>}>
+              <ContactUs/>
+
+              </Suspense>
+            </Layout>
+          } />
           <Route path="*" element={
             <Layout>
               <Suspense fallback={<div className="loading-spinner">Loading...</div>}>

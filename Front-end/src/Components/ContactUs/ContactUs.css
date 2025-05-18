@@ -1,0 +1,114 @@
+/* ContactUs.css */
+.contact-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.breadcrumb {
+  color: #666;
+  margin-bottom: 30px;
+  font-size: 14px;
+}
+.breadcrumb-contact {
+  font-weight: bold;
+  color: #333; /* أو أي لون أغمق يناسب تصميمك */
+}
+
+
+.contact-sections {
+  display: flex;
+  gap: 50px;
+}
+
+.contact-info {
+  flex: 1;
+  background: #f9f9f9;
+  padding: 30px;
+  border-radius: 8px;
+}
+
+.contact-info h2 {
+  margin-top: 20px;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.contact-info p {
+  margin: 10px 0;
+  color: #555;
+}
+
+.contact-form {
+  flex: 2;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.form-row input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  resize: vertical;
+}
+
+.send-button {
+  background-color: #A0522D;
+  color: white;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.send-button:hover {
+  background-color: #0056b3;
+}
+
+/* تصميم متجاوب للهواتف */
+@media (max-width: 768px) {
+  .contact-sections {
+    flex-direction: column;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+}
+.contact-item {
+  display: flex;
+  align-items: flex-start; /* بدل align-items: center */
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.contact-icon {
+  font-size: 20px;
+  background-color: #ECD2B2; /* لون بيج مشابه للصورة */
+  color: #000;
+  border-radius: 50%;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 45px;
+  height: 45px;
+}
