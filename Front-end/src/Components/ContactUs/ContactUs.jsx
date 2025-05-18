@@ -1,12 +1,12 @@
 import React from 'react';
-import './ContactUs.css'; // سننشئ هذا الملف لاحقًا
+import './ContactUs.css'; 
 import { FaPhone, FaEnvelope } from 'react-icons/fa';
 
 const ContactUs = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
-    // هنا يمكنك إضافة منطق إرسال النموذج
-    alert('تم إرسال رسالتك بنجاح!');
+    
+    alert('Message is sent successfully');
   };
 
   return (
@@ -19,7 +19,7 @@ const ContactUs = () => {
 
       
       <div className="contact-sections">
-        {/* قسم معلومات الاتصال */}
+        
         <div className="contact-info">
           <div className="contact-item">
             <FaPhone className="contact-icon" />
@@ -41,7 +41,7 @@ const ContactUs = () => {
           </div>
         </div>
         
-        {/* قسم نموذج الاتصال */}
+        
         <div className="contact-form">
           <form onSubmit={handleSubmit}>
             <div className="form-row">

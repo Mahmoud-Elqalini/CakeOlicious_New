@@ -1,4 +1,4 @@
-/* ContactUs.css */
+
 .contact-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -12,7 +12,7 @@
 }
 .breadcrumb-contact {
   font-weight: bold;
-  color: #333; /* أو أي لون أغمق يناسب تصميمك */
+  color: #333; 
 }
 
 
@@ -82,7 +82,7 @@ textarea {
   background-color: #0056b3;
 }
 
-/* تصميم متجاوب للهواتف */
+
 @media (max-width: 768px) {
   .contact-sections {
     flex-direction: column;
@@ -95,14 +95,14 @@ textarea {
 }
 .contact-item {
   display: flex;
-  align-items: flex-start; /* بدل align-items: center */
+  align-items: flex-start; 
   gap: 15px;
   margin-bottom: 20px;
 }
 
 .contact-icon {
   font-size: 20px;
-  background-color: #ECD2B2; /* لون بيج مشابه للصورة */
+  background-color: #ECD2B2; 
   color: #000;
   border-radius: 50%;
   padding: 12px;
