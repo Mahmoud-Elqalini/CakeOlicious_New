@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from sqlalchemy.exc import SQLAlchemyError
-from backend.routes.auth import token_required
+from backend.routes.auth import token_required  # Ensure correct import
 from backend.extensions import db
 import logging
 
@@ -27,7 +27,10 @@ def create_order(current_user):
 
     if not shipping_address or not payment_method:
         logger.error("Missing shipping_address or payment_method in request")
-        return jsonify({'message': 'Shipping address and payment method are required'}), 400
+        return jsonify({
+            'success': False,
+            'message': 'Shipping address and payment method are required'
+        }), 400
 
     try:
         # Get active cart for the user
@@ -52,7 +55,14 @@ def create_order(current_user):
         ).scalar()
 
         total_amount = float(total_amount) if total_amount is not None else 0.00
-        print(total_amount)
+        print(f"Total amount: {total_amount}")
+
+        if total_amount <= 0:
+            logger.warning(f"Cart is empty or total amount is zero for user {current_user.id}")
+            return jsonify({
+                'success': False,
+                'message': 'Your cart is empty or the total amount is zero'
+            }), 400
 
         # Execute stored procedure to create order
         result = db.session.execute(
@@ -71,7 +81,7 @@ def create_order(current_user):
         if rows:
             row = rows[0]  # Take the first row (assuming single result)
             status, status_code, message, order_id = row
-            print(status, status_code, message, order_id)
+            print(f"CreateOrder result: {status}, {status_code}, {message}, {order_id}")
             if status == 'success':
                 logger.info(f"Order {order_id} created successfully for user {current_user.id}")
                 return jsonify({

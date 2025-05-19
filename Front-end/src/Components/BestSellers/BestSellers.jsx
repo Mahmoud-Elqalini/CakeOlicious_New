@@ -69,9 +69,12 @@ const BestSellers = () => {
                                     />
                                 )}
                                 <div className={styles.overlay}>
-                                    <button className={styles.quickView}>
+                                    {/* <button 
+                                        className={styles.quickView}
+                                        onClick={() => window.location.href = `/products/${product.id}`}
+                                    >
                                         <FaEye style={{ marginRight: '6px' }} /> Quick View
-                                    </button>
+                                    </button> */}
                                 </div>
                             </div>
                             <div className={styles.productInfo}>
@@ -84,9 +87,9 @@ const BestSellers = () => {
                                         <FaStar className={styles.ratingIcon} />
                                     </div>
                                 </div>
-                                <button className={styles.addToCartBtn}>
+                                {/* <button className={styles.addToCartBtn}>
                                     <FaShoppingCart style={{ marginRight: '8px' }} /> Add to Cart
-                                </button>
+                                </button> */}
                             </div>
                         </div>
                     ))}

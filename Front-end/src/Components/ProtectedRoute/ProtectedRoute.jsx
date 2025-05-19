@@ -7,7 +7,13 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 
     console.log('User from localStorage:', userStr);
 
-    const user = JSON.parse(userStr || '{}');
+    // Parse user data safely
+    let user = {};
+    try {
+        user = JSON.parse(userStr || '{}');
+    } catch (error) {
+        console.error('Error parsing user data:', error);
+    }
 
     console.log('Parsed user:', user);
     console.log('User role:', user.role);
@@ -18,8 +24,12 @@ const ProtectedRoute = ({ children, requiredRole }) => {
         return <Navigate to="/signin" replace />;
     }
 
-    if (requiredRole && user.role?.toLowerCase() !== requiredRole.toLowerCase()) {
+    // Check if the user role matches the required role (case-insensitive)
+    // Check both role and user_role fields
+    const userRole = user.role || user.user_role;
+    if (requiredRole && (!userRole || userRole.toLowerCase() !== requiredRole.toLowerCase())) {
         console.log('Role mismatch, redirecting to home');
+        console.log(`User role: ${userRole}, Required role: ${requiredRole}`);
         return <Navigate to="/" replace />;
     }
 

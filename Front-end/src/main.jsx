@@ -18,9 +18,20 @@ axios.interceptors.request.use(
     // If token exists, add it to the headers
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
+      console.log(`Adding token to request: Bearer ${token.substring(0, 10)}...`);
+      
+      // Get user data from localStorage
+      const userStr = localStorage.getItem('user');
+      try {
+        const userData = JSON.parse(userStr || '{}');
+        console.log('User data for request:', userData);
+        console.log('User role for request:', userData.role || userData.user_role);
+      } catch (error) {
+        console.error('Error parsing user data in interceptor:', error);
+      }
     }
     
-    console.log(`Making ${config.method.toUpperCase()} request to: ${config.url}`);
+    console.log(`Making ${config.method?.toUpperCase()} request to: ${config.url}`);
     return config;
   },
   error => {

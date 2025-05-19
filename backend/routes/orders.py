@@ -3,7 +3,7 @@ from backend.extensions import db
 import logging
 from decimal import Decimal
 from sqlalchemy.exc import SQLAlchemyError
-from backend.routes.auth import token_required
+from backend.routes.auth import token_required  # Ensure correct import
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)

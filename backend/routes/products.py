@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from backend.extensions import db
 import logging
 from sqlalchemy.exc import SQLAlchemyError
-from backend.routes.auth import token_required
+from backend.routes.auth import token_required  # Ensure correct import
 from sqlalchemy import text
 from decimal import Decimal
 

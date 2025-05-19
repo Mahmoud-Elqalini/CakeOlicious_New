@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import styles from './ProductsPage.module.css';
 import axios from 'axios';
 import { FaStar, FaShoppingCart, FaEye, FaFilter, FaSearch, FaSortAmountDown, FaTimes, FaTag} from 'react-icons/fa';
+import AddToCart from '../../Components/AddToCart/AddToCart';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-toastify';
 
 const ProductsPage = () => {
+  // Add a fallback for when useAuth() returns undefined
+  const auth = useAuth() || { isAuthenticated: false, token: null };
+  const { isAuthenticated, token } = auth;
   const [products, setProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +24,12 @@ const ProductsPage = () => {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Function to handle quick view
+  const handleQuickView = (productId) => {
+    navigate(`/products/${productId}`);
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -377,7 +389,10 @@ const ProductsPage = () => {
                   }}
                 />
                 <div className={styles.overlay}>
-                  <button className={styles.quickView}>
+                  <button 
+                    className={styles.quickView}
+                    onClick={() => handleQuickView(product.id)}
+                  >
                     <FaEye style={{ marginRight: '6px' }} /> Quick View
                   </button>
                 </div>
@@ -405,7 +420,18 @@ const ProductsPage = () => {
                   </div>
                 </div>
                 
-                <button className={styles.addToCartBtn}>
+                <button 
+                  className={styles.addToCartBtn}
+                  onClick={() => {
+                    const token = localStorage.getItem('token');
+                    if (token) {
+                      // Add to cart logic
+                      addToCart(product.id, token);
+                    } else {
+                      toast.info('Please log in to add items to cart');
+                    }
+                  }}
+                >
                   <FaShoppingCart style={{ marginRight: '8px' }} /> Add to Cart
                 </button>
               </div>
@@ -415,6 +441,55 @@ const ProductsPage = () => {
       )}
     </div>
   );
+};
+
+const addToCart = async (productId, token) => {
+  try {
+    // Log token for debugging
+    console.log('Token available:', !!token);
+    if (!token) {
+      toast.info('Please log in to add items to cart');
+      return;
+    }
+    
+    const response = await axios.post(
+      'http://localhost:5000/cart/add',
+      { product_id: productId, quantity: 1 },
+      { 
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        } 
+      }
+    );
+    
+    if (response.data.success) {
+      toast.success('Added to cart!');
+      
+      // Dispatch event to update cart count immediately
+      const currentCount = parseInt(localStorage.getItem('cartCount') || '0');
+      const newCount = currentCount + 1;
+      localStorage.setItem('cartCount', newCount.toString());
+      
+      const cartCountEvent = new CustomEvent('cartCountUpdated', {
+        detail: { count: newCount }
+      });
+      window.dispatchEvent(cartCountEvent);
+    } else {
+      toast.error(response.data.message || 'Failed to add to cart');
+    }
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+    console.error('Error response:', error.response?.data);
+    
+    // Check if the error is due to authentication
+    if (error.response?.status === 401) {
+      toast.error('Authentication failed. Please log in again.');
+      // You might want to redirect to login page here
+    } else {
+      toast.error('Failed to add to cart');
+    }
+  }
 };
 
 export default ProductsPage;

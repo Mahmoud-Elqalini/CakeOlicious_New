@@ -50,7 +50,7 @@
 }
 
 .brandName {
-  font-family: "Bubblegum Sans", cursive;
+  font-family: var(--primary-font);
   font-style: normal;
   font-weight: 400;
   font-size: 40px;
@@ -58,7 +58,7 @@
   display: flex;
   align-items: center;
   letter-spacing: 0.05em;
-  color: #4a2c2a;
+  color: var(--primary-color);
   text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
 }
 
@@ -88,7 +88,7 @@
 }
 
 .searchIcon {
-  color: #4a2c2a;
+  color: var(--primary-color);
   font-size: 16px;
   margin-right: 10px;
 }
@@ -116,6 +116,30 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  margin-right: 5rem;
+}
+
+.iconWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.cartCountBadge {
+  position: absolute;
+  top: -16px;
+  right: 8px;
+  background-color: var(--secondary-color);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-family: var(--tertiary-font);
 }
 
 .iconGroup {
@@ -132,17 +156,23 @@
 }
 
 .icon {
-  color: #4a2c2a;
+  color: var(--primary-color);
   margin-right: 8px;
+  font-size: 1.5rem;
+  transition: color 0.3s ease;
+}
+
+.iconGroup:hover .icon {
+  color: var(--secondary-color);
 }
 
 .iconText {
-  font-family: "Bubblegum Sans", cursive;
+  font-family: var(--primary-font);
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
   line-height: 150%;
-  color: #4a2c2a;
+  color: var(--primary-color);
   letter-spacing: normal;
 }
 
@@ -204,12 +234,12 @@
 }
 
 .menuItem {
-  font-family: "Bubblegum Sans", cursive;
+  font-family: var(--primary-font);
   font-style: normal;
   font-weight: 400;
   font-size: 20px;
   line-height: 150%;
-  color: #4a2c2a;
+  color: var(--primary-color);
   text-decoration: none;
   position: relative;
   cursor: pointer;
@@ -226,12 +256,17 @@
   left: 0;
   width: 0;
   height: 2px;
-  background-color: #4a2c2a;
+  background-color: var(--primary-color);
   transition: width 0.3s ease;
+}
+
+.menuItem:hover {
+  color: var(--secondary-color);
 }
 
 .menuItem:hover::after {
   width: 100%;
+  background-color: var(--secondary-color);
 }
 
 .contactButton {
@@ -239,7 +274,7 @@
   justify-content: center;
   align-items: center;
   padding: 12px 20px;
-  background: #58150a;
+  background: var(--secondary-color);
   box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
   border-radius: 8px;
   border: none;
@@ -268,4 +303,34 @@
 
 .navigation a {
   text-decoration: none;
+}
+
+/* Add responsive behavior for smaller screens */
+@media (max-width: 768px) {
+  .navSides {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .brandLogo {
+    margin-left: 0;
+  }
+  
+  .menuItems {
+    gap: 20px;
+  }
+}
+
+/* Improve accessibility with focus states */
+.menuItem:focus {
+  outline: 2px solid var(--secondary-color);
+  outline-offset: 3px;
+}
+
+/* Add active state for current page */
+.menuItem.active {
+  color: var(--secondary-color);
+}
+.menuItem.active::after {
+  width: 100%;
 }

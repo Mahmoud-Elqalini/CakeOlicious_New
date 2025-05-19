@@ -26,25 +26,56 @@ const SignIn = () => {
         setLoading(true)
 
         try {
+            console.log('Submitting login form with data:', formData);
             const response = await axios.post('http://localhost:5000/login', formData)
+            console.log('Login response:', response.data);
+            console.log('User data in response:', response.data.user);
+            
+            // Check if the response contains the expected data
+            if (!response.data.token) {
+                throw new Error('No token received from server');
+            }
+            
+            if (!response.data.user) {
+                throw new Error('No user data received from server');
+            }
+            
+            // Extract user role from response
+            // The backend is using user_role, not role
+            const userRole = response.data.user.user_role || response.data.user.role || 'customer';
+
+            // Ensure the user object has both role properties to be safe
+            const userData = {
+                ...response.data.user,
+                role: (userRole || '').toLowerCase(), // For frontend components - safely convert to lowercase
+                user_role: userRole // Keep the original for backend compatibility
+            };
+
+            console.log('Processed user data:', userData);
+            console.log('User role:', userData.role);
+            console.log('User role (original):', userData.user_role);
             
             // Store token and user data in localStorage
-            localStorage.setItem('token', response.data.token)
-            localStorage.setItem('user', JSON.stringify(response.data.user))
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('user', JSON.stringify(userData));
             
-            // Debug: Log the user data
-            console.log('User data:', response.data.user)
-            console.log('User role:', response.data.user.role)
+            toast.success('Login successful!');
             
-            toast.success('Login successful!')
+            // Add this debugging code after login to check the actual user data
+            console.log('Full response data:', response.data);
             
-            // Redirect based on user role
-            if (response.data.user.role === 'admin') {
-                console.log('Redirecting to admin dashboard')
-                navigate('/admin/dashboard')
+            // Check the exact format of the user role in the response
+            console.log('User role from server:', 
+                typeof response.data.user.user_role, 
+                response.data.user.user_role);
+            
+            // Make sure role comparison is case-insensitive
+            if (userData.role.toLowerCase() === 'admin') {
+                console.log('Redirecting to admin dashboard');
+                navigate('/admin/dashboard');
             } else {
-                console.log('Redirecting to home page')
-                navigate('/')
+                console.log('Redirecting to home page');
+                navigate('/');
             }
         } catch (error) {
             console.error('Login error:', error)

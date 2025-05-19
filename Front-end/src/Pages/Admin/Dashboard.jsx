@@ -75,8 +75,9 @@ const AdminDashboard = () => {
             
             // Handle different error scenarios
             if (err.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
+                console.log("Error response status:", err.response.status);
+                console.log("Error response data:", err.response.data);
+                
                 if (err.response.status === 401 || err.response.status === 403) {
                     toast.error('You are not authorized to access the admin dashboard');
                     navigate('/signin');
@@ -84,10 +85,10 @@ const AdminDashboard = () => {
                     setError(err.response.data?.message || 'Failed to load admin dashboard');
                 }
             } else if (err.request) {
-                // The request was made but no response was received
+                console.log("No response received:", err.request);
                 setError('No response from server. Please check your connection.');
             } else {
-                // Something happened in setting up the request
+                console.log("Request setup error:", err.message);
                 setError('Error setting up request: ' + err.message);
             }
         } finally {
@@ -189,3 +190,8 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+
+
+
+

@@ -4,6 +4,7 @@ import './App.css'
 import Layout from './Components/Layout/Layout'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
+import { AuthProvider } from './context/AuthContext';
 const HomePage = lazy(() => import('./Pages/HomePage/HomePage'))
 const ProductsPage = lazy(() => import('./Pages/ProductsPage/ProductsPage'))
 const NotFound = lazy(() => import('./Pages/NotFound/NotFound'))
@@ -12,9 +13,14 @@ const SignUp = lazy(() => import('./Pages/SignUp/SignUp'))
 const AdminDashboard = lazy(() => import('./Pages/Admin/Dashboard'))
 const AdminProducts = lazy(() => import('./Pages/Admin/Products/AdminProducts'))
 const Account = lazy(() => import('./Pages/Account/Account'))
+const Cart = lazy(() => import('./Pages/Cart/Cart'))
+const Checkout = lazy(() => import('./Pages/Checkout/Checkout'))
+const OrderSuccess = lazy(() => import('./Pages/OrderSuccess/OrderSuccess'))
 import ProtectedRoute from './Components/ProtectedRoute/ProtectedRoute'
 import ErrorBoundary from './Components/ErrorBoundary/ErrorBoundary'
 import AdminUsers from './Pages/Admin/Users/AdminUsers'
+const ProductDetail = lazy(() => import('./Pages/ProductDetail/ProductDetail'))
+import Wishlist from './Pages/Wishlist/Wishlist';
 
 function App() {
   const [message, setMessage] = useState('');
@@ -42,9 +48,10 @@ function App() {
   }, []);
 
   return (
-    <Router>
-      <ErrorBoundary>
-        <Routes>
+    <AuthProvider>
+      <Router>
+        <ErrorBoundary>
+          <Routes>
           
           <Route
             path="/admin/dashboard"
@@ -86,6 +93,13 @@ function App() {
               </Suspense>
             </Layout>
           } />
+          <Route path="/products/:productId" element={
+            <Layout>
+              <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
+                <ProductDetail />
+              </Suspense>
+            </Layout>
+          } />
           <Route path="/signin" element={
             <Layout>
               <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
@@ -107,6 +121,41 @@ function App() {
               </Suspense>
             </Layout>
           } />
+          <Route path="/cart" element={
+            <Layout>
+              <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
+                <Cart />
+              </Suspense>
+            </Layout>
+          } />
+          <Route path="/checkout" element={
+            <Layout>
+              <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
+                <Checkout />
+              </Suspense>
+            </Layout>
+          } />
+          <Route path="/order/success" element={
+            <Layout>
+              <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
+                <OrderSuccess />
+              </Suspense>
+            </Layout>
+          } />
+          <Route path="/order/cancel" element={
+            <Layout>
+              <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
+                <NotFound />
+              </Suspense>
+            </Layout>
+          } />
+          <Route path="/wishlist" element={
+            <Layout>
+              <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
+                <Wishlist />
+              </Suspense>
+            </Layout>
+          } />
 
           {}
           <Route path="*" element={
@@ -117,9 +166,10 @@ function App() {
             </Layout>
           } />
         </Routes>
-      </ErrorBoundary>
+        </ErrorBoundary>
+      </Router>
       <ToastContainer position="top-right" autoClose={3000} />
-    </Router>
+    </AuthProvider>
   )
 }
 

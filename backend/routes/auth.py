@@ -95,7 +95,7 @@ def login():
                     pass_word=hashed_password,
                     email="admin@example.com",
                     full_name="Administrator",
-                    user_role="admin",
+                    user_role="Admin",  # Make sure this matches the case in your database
                 )
                 db.session.add(admin_user)
                 db.session.commit()
@@ -128,6 +128,7 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if user and check_password_hash(user.pass_word, password):
+            # Create token
             token = jwt.encode(
                 {
                     "user_id": user.id,
@@ -137,20 +138,20 @@ def login():
                 app.config["SECRET_KEY"],
                 algorithm="HS256",
             )
-            logger.info(f"Generated token for user {username}: {token}")
-
             
+            # Make sure we're including the correct user role field
             user_response = {
                 "token": token,
                 "user": {
                     "id": user.id,
                     "username": user.username,
                     "email": user.email,
-                    "role": user.user_role,  
+                    "role": user.user_role,  # Use user_role consistently
+                    "user_role": user.user_role  # Include both for compatibility
                 },
             }
+            
             logger.info(f"User login response: {user_response}")
-
             return jsonify(user_response), 200
         else:
             logger.warning(f"Invalid credentials for username: {username}")
@@ -169,7 +170,9 @@ def token_required(f):
 
         if "Authorization" in request.headers:
             try:
-                token = request.headers["Authorization"].split()[1]
+                auth_header = request.headers["Authorization"]
+                logger.debug(f"Auth header: {auth_header[:15]}...")
+                token = auth_header.split()[1]
             except IndexError:
                 logger.warning("Invalid Authorization header format")
                 return jsonify({"message": "Invalid Authorization header format"}), 401

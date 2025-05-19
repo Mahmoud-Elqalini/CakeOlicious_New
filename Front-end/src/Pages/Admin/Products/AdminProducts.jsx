@@ -64,21 +64,41 @@ const AdminProducts = () => {
         setError(null);
 
         try {
+            console.log("Fetching products...");
             const token = localStorage.getItem('token');
+            
+            if (!token) {
+                throw new Error('Authentication token not found');
+            }
+            
+            console.log("Making request to: http://localhost:5000/admin/products");
             const response = await axios.get('http://localhost:5000/admin/products', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
 
-            setProducts(response.data.products);
+            console.log("Products response:", response.data);
 
-            // Also fetch categories for the filter
-            const categoriesResponse = await axios.get('http://localhost:5000/categories');
-            setCategories(categoriesResponse.data.categories);
+            if (response.data && response.data.products) {
+                console.log(`Received ${response.data.products.length} products`);
+                setProducts(response.data.products);
+                
+                // Also fetch categories for the filter
+                try {
+                    const categoriesResponse = await axios.get('http://localhost:5000/categories');
+                    console.log("Categories response:", categoriesResponse.data);
+                    setCategories(categoriesResponse.data.categories || []);
+                } catch (categoryErr) {
+                    console.error('Error fetching categories:', categoryErr);
+                }
+            } else {
+                throw new Error('Invalid response format');
+            }
         } catch (err) {
             console.error('Error fetching products:', err);
-            setError('Failed to load products. Please try again later.');
+            setError(`Failed to load products: ${err.message}`);
+            toast.error(`Failed to load products: ${err.response?.data?.message || err.message}`);
         } finally {
             setLoading(false);
         }

@@ -38,20 +38,41 @@ const AdminUsers = () => {
                 return;
             }
 
+            console.log('Fetching users with token:', token ? 'Token exists' : 'No token');
+            
             const response = await axios.get('http://localhost:5000/admin/users', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
 
+            console.log('Users response:', response.data);
             setUsers(response.data.users);
         } catch (err) {
             console.error('Error fetching users:', err);
-            setError('Failed to load users. Please try again later.');
             
-            if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-                toast.error('You are not authorized to access this page');
-                navigate('/signin');
+            // Enhanced error logging
+            if (err.response) {
+                console.error('Error response status:', err.response.status);
+                console.error('Error response data:', err.response.data);
+                
+                // Set a more detailed error message
+                setError(`Failed to load users: ${err.response.data?.message || err.response.statusText}`);
+                
+                if (err.response.status === 401 || err.response.status === 403) {
+                    toast.error('You are not authorized to access this page');
+                    navigate('/signin');
+                } else {
+                    toast.error(`Error: ${err.response.data?.message || 'Unknown server error'}`);
+                }
+            } else if (err.request) {
+                console.error('No response received:', err.request);
+                setError('No response from server. Please check your connection.');
+                toast.error('Server not responding. Please try again later.');
+            } else {
+                console.error('Request setup error:', err.message);
+                setError('Error setting up request: ' + err.message);
+                toast.error(err.message);
             }
         } finally {
             setLoading(false);
@@ -171,16 +192,19 @@ const AdminUsers = () => {
             
             if (editingUser) {
                 // Update existing user
-                await axios.put(
+                console.log('Updating user:', editingUser.id, formData);
+                const response = await axios.put(
                     `http://localhost:5000/admin/user/update/${editingUser.id}`,
                     formData,
                     {
                         headers: {
-                            'Authorization': `Bearer ${token}`
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
                         }
                     }
                 );
 
+                console.log('Update response:', response.data);
                 toast.success(`User ${formData.username} updated successfully`);
                 
                 // Update the user in the state
@@ -189,20 +213,23 @@ const AdminUsers = () => {
                 ));
             } else {
                 // Add new user
+                console.log('Creating new user:', formData);
                 const response = await axios.post(
                     'http://localhost:5000/admin/user/create',
                     formData,
                     {
                         headers: {
-                            'Authorization': `Bearer ${token}`
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
                         }
                     }
                 );
 
+                console.log('Create response:', response.data);
                 toast.success(`User ${formData.username} created successfully`);
                 
                 // Add the new user to the state
-                setUsers([...users, response.data]);
+                setUsers([...users, response.data.user]);
             }
             
             setShowModal(false);
@@ -452,6 +479,8 @@ const AdminUsers = () => {
 };
 
 export default AdminUsers;
+
+
 
 
 
