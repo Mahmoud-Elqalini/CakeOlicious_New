@@ -11,27 +11,27 @@ const OrderSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const token = localStorage.getItem('token');
-  
+
   useEffect(() => {
     if (!token) {
       toast.error('Please log in to view order details');
       navigate('/login');
       return;
     }
-    
+
     const queryParams = new URLSearchParams(location.search);
     const orderId = queryParams.get('order_id');
     const sessionId = queryParams.get('session_id');
-    
+
     if (!orderId) {
       toast.error('Order ID not found');
       navigate('/account');
       return;
     }
-    
+
     fetchOrderDetails(orderId);
   }, [location, navigate, token]);
-  
+
   const fetchOrderDetails = async (orderId) => {
     setLoading(true);
     try {
@@ -40,9 +40,9 @@ const OrderSuccess = () => {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       console.log('Order details:', response.data);
-      
+
       if (response.data.status === 'success') {
         setOrderDetails({
           order: response.data.order,
@@ -60,7 +60,7 @@ const OrderSuccess = () => {
       setLoading(false);
     }
   };
-  
+
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
@@ -69,10 +69,35 @@ const OrderSuccess = () => {
       </div>
     );
   }
-  
+
   return (
     <div className={styles.successContainer}>
       <div className={styles.successCard}>
         <div className={styles.successHeader}>
           <FaCheckCircle className={styles.successIcon} />
-          <h
+          <h className={styles.successTitle}>Order Placed Successfully</h>
+        </div>
+        <p className={styles.successMessage}>
+          Thank you for your order! Your order has been placed successfully.
+        </p>
+        <div className={styles.orderDetails}>
+          <h2 className={styles.orderDetailsTitle}>Order Details</h2>
+          <div className={styles.orderInfo}>
+            <p>Order ID: {orderDetails?.order.id}</p>
+            <p>Order Date: {orderDetails?.order.order_date}</p>
+            <p>Total Amount: ${orderDetails?.order.total_amount.toFixed(2)}</p>
+            <p>Status: {orderDetails?.order.status}</p>
+          </div>
+        </div>
+        <button
+          className={styles.backToAccountBtn}
+          onClick={() => navigate('/account')}
+        >
+          <FaArrowLeft /> Back to Account
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default OrderSuccess;
