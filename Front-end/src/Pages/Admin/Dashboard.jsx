@@ -117,9 +117,9 @@ const AdminDashboard = () => {
                 </div>
 
                 {}
-                <div style={{padding: "20px", backgroundColor: "#f8d7da", color: "#721c24", marginBottom: "20px"}}>
+                {/* <div style={{padding: "20px", backgroundColor: "#f8d7da", color: "#721c24", marginBottom: "20px"}}>
                     Dashboard is loading... If you see this message, the component is rendering.
-                </div>
+                </div> */}
 
                 {error && (
                     <div className={styles.error}>

@@ -21,6 +21,7 @@ import ErrorBoundary from './Components/ErrorBoundary/ErrorBoundary'
 import AdminUsers from './Pages/Admin/Users/AdminUsers'
 const ProductDetail = lazy(() => import('./Pages/ProductDetail/ProductDetail'))
 import Wishlist from './Pages/Wishlist/Wishlist';
+import ContactUs from './Components/ContactUs/ContactUs'
 
 function App() {
   const [message, setMessage] = useState('');
@@ -153,6 +154,13 @@ function App() {
             <Layout>
               <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
                 <Wishlist />
+              </Suspense>
+            </Layout>
+          } />
+          <Route path="/contact" element={
+            <Layout>
+              <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
+                <ContactUs />
               </Suspense>
             </Layout>
           } />
