@@ -303,7 +303,8 @@ def get_admin_products(current_user):
     except Exception as e:
         logger.error(f"General error fetching products: {str(e)}")
         return jsonify({"message": "Error fetching products", "error": str(e)}), 500
-
+    
+    
 @admin_bp.route("/admin/product/add", methods=["POST"])
 @token_required
 def add_product(current_user):
@@ -323,14 +324,17 @@ def add_product(current_user):
         return jsonify({"message": "Validation error", "errors": errors}), 400
 
     try:
-        query = text("""
-            INSERT INTO products (product_name, product_description, price, stock, category_id, image_url, discount, is_active)
-            VALUES (:product_name, :description, :price, :stock, :category_id, :image_url, :discount, 1)
-            RETURNING id
-        """)
-        
         result = db.session.execute(
-            query,
+            text("""
+                EXEC AddNewProduct
+                    @product_name=:product_name,
+                    @description=:description,
+                    @price=:price,
+                    @stock=:stock,
+                    @category_id=:category_id,
+                    @image_url=:image_url,
+                    @discount=:discount
+            """),
             {
                 "product_name": form.product_name.data,
                 "description": form.description.data or "",
@@ -339,19 +343,19 @@ def add_product(current_user):
                 "category_id": form.category_id.data,
                 "image_url": form.image_url.data or "",
                 "discount": form.discount.data or 0.0,
-            },
+            }
         )
-        
-        new_product_id = result.scalar()
-        
-        if new_product_id:
-            db.session.commit()
-            logger.info(f"Product {form.product_name.data} added successfully with ID {new_product_id}")
-            return jsonify({"message": "Product added successfully", "product_id": new_product_id}), 201
+
+        row = result.fetchone()
+        db.session.commit()
+
+        if row:
+            logger.info(f"AddNewProduct result: {row.status} - {row.message}")
+            status_code = 201 if row.status == "success" else 400
+            return jsonify({"status": row.status, "message": row.message}), status_code
         else:
-            db.session.rollback()
-            logger.error("Error adding product: No ID returned")
-            return jsonify({"message": "Error adding product: No ID returned"}), 500
+            logger.error("No response from stored procedure")
+            return jsonify({"message": "No response from stored procedure"}), 500
 
     except SQLAlchemyError as e:
         db.session.rollback()
