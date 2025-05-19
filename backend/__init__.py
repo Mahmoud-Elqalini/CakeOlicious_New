@@ -24,9 +24,10 @@ def create_app():
     def serve_static(filename):
         return send_from_directory(os.path.join(app.root_path, 'static'), filename)
     
+    # Update CORS configuration to include both localhost:5174 and 127.0.0.1:5174
     CORS(app, 
-         origins=["http://localhost:5174", "http://localhost:3000"],
-         allow_headers=["Content-Type", "Authorization"],
+         origins=["http://localhost:5174", "http://127.0.0.1:5174", "http://localhost:3000"],
+         allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
          methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
          supports_credentials=True,
          max_age=3600)
