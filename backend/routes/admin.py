@@ -1,25 +1,27 @@
-from flask import Blueprint, jsonify, request, current_app
-from backend.extensions import db
-import logging
-from werkzeug.security import generate_password_hash, check_password_hash
-from decimal import Decimal
-from backend.routes.auth import token_required
-import os
-from werkzeug.utils import secure_filename
-import uuid
-import jwt
-from datetime import datetime
+from flask import Blueprint, request, jsonify, current_app
 from flask_wtf import FlaskForm
 from wtforms import StringField, FloatField, IntegerField
 from wtforms.validators import DataRequired, NumberRange
+from datetime import datetime
+import uuid
+import os
+from werkzeug.utils import secure_filename
+import logging
 from sqlalchemy import text
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# Import the correct models
+from backend.models.Product import Product
+from backend.models.Category import Category
+from backend.models.User import User
+from backend.extensions import db
+from backend.routes.auth import token_required
+
+# Setup logging
 logger = logging.getLogger(__name__)
 
-admin_bp = Blueprint("admin", __name__)
+admin_bp = Blueprint('admin', __name__)
 
+# Check if user is admin
 def check_admin(user):
     return user.user_role.lower() == 'admin'
 
@@ -740,3 +742,66 @@ def update_user(current_user, user_id):
             "message": f"Error: {str(e)}",
             "traceback": error_traceback
         }), 500
+
+@admin_bp.route("/admin/product/add", methods=["POST"])
+@token_required
+def add_product(current_user):
+    if not check_admin(current_user):
+        logger.warning(f"Unauthorized access attempt for user_id: {current_user.id}")
+        return jsonify({"success": False, "message": "Unauthorized access"}), 403
+    
+    try:
+        if not request.is_json:
+            logger.error("Invalid JSON format in request")
+            return jsonify({"success": False, "message": "Invalid JSON format"}), 400
+        
+        data = request.get_json()
+        logger.info(f"Received product data: {data}")
+        
+        # Basic validation
+        required_fields = ['product_name', 'price', 'stock', 'category_id']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({
+                    "success": False, 
+                    "message": f"Missing required field: {field}"
+                }), 400
+        
+        # Create a new product
+        new_product = Product(
+            product_name=data.get("product_name"),
+            product_description=data.get("description", ""),  # Changed to product_description
+            price=data.get("price"),
+            stock=data.get("stock"),
+            category_id=data.get("category_id"),
+            image_url=data.get("image_url", ""),
+            discount=data.get("discount", 0),
+            is_active=True
+        )
+        
+        db.session.add(new_product)
+        db.session.commit()
+        
+        logger.info(f"Product created successfully: {new_product.id}")
+        
+        # Return the newly created product
+        return jsonify({
+            "success": True, 
+            "message": "Product added successfully",
+            "product": {
+                "id": new_product.id,
+                "product_name": new_product.product_name,
+                "description": new_product.product_description,  # Changed to product_description
+                "price": float(new_product.price),
+                "stock": new_product.stock,
+                "category_id": new_product.category_id,
+                "image_url": new_product.image_url,
+                "discount": float(new_product.discount),
+                "is_active": new_product.is_active
+            }
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error adding product: {str(e)}")
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500

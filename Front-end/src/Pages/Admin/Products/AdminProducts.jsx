@@ -581,6 +581,12 @@ const AdminProducts = () => {
             setLoading(true);
             const token = localStorage.getItem('token');
 
+            // Log the request for debugging
+            console.log('Submitting product data:', formData);
+            console.log('Request URL:', editingProduct 
+                ? `http://localhost:5000/admin/product/update/${editingProduct.id}`
+                : 'http://localhost:5000/admin/product/add');
+
             if (editingProduct) {
                 // Update existing product
                 await axios.post(
@@ -588,7 +594,8 @@ const AdminProducts = () => {
                     formData,
                     {
                         headers: {
-                            'Authorization': `Bearer ${token}`
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
                         }
                     }
                 );
@@ -611,7 +618,8 @@ const AdminProducts = () => {
                     formData,
                     {
                         headers: {
-                            'Authorization': `Bearer ${token}`
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
                         }
                     }
                 );
@@ -631,6 +639,7 @@ const AdminProducts = () => {
             resetForm();
         } catch (err) {
             console.error('Error saving product:', err);
+            console.error('Error response:', err.response?.data);
             toast.error('Failed to save product: ' + (err.response?.data?.message || err.message));
         } finally {
             setLoading(false);
