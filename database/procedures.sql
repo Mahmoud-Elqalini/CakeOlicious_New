@@ -142,61 +142,6 @@ BEGIN
     SELECT status, message FROM @Result;
 END
 GO
-
--- ################################################################ Add Product Discount #########################################################
-CREATE PROCEDURE AddProductDiscount
-    @product_name VARCHAR(100),
-    @new_discount DECIMAL(5, 2)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @Result TABLE (status VARCHAR(10), message VARCHAR(255));
-    DECLARE @ExistingProductID BIGINT;
-    DECLARE @CurrentDiscount DECIMAL(5, 2);
-
-    -- Validate discount value
-    IF @new_discount < 0 OR @new_discount > 100
-    BEGIN
-        INSERT INTO @Result (status, message)
-        VALUES ('fail', 'Invalid discount value. Please enter a value between 0 and 100.');
-    END
-    ELSE
-    BEGIN
-        -- Check if product exists
-        SELECT @ExistingProductID = id, @CurrentDiscount = discount
-        FROM products
-        WHERE product_name = @product_name;
-
-        IF @ExistingProductID IS NOT NULL
-        BEGIN
-            IF @CurrentDiscount = @new_discount
-            BEGIN
-                INSERT INTO @Result (status, message)
-                VALUES ('info', 'The discount value is already the same. No changes made.');
-            END
-            ELSE
-            BEGIN
-                -- Update discount
-                UPDATE products
-                SET discount = @new_discount
-                WHERE id = @ExistingProductID;
-
-                INSERT INTO @Result (status, message)
-                VALUES ('success', 'Discount applied successfully!');
-            END
-        END
-        ELSE
-        BEGIN
-            INSERT INTO @Result (status, message)
-            VALUES ('fail', 'Product not found.');
-        END
-    END
-
-    -- Return the result from the temporary table
-    SELECT status, message FROM @Result;
-END
-GO
 -- ################################################################ update Product price #########################################################
 CREATE PROCEDURE UpdateProductPrice
     @product_name VARCHAR(100),
@@ -895,20 +840,20 @@ BEGIN
 END;
 GO
 -- ########################################################################### GetAllProducts #####################################
--- Get All Products and return as a normal table
-CREATE PROCEDURE [dbo].[GetAllProducts]
-    @category_id INT = NULL, -- Optional parameter, if NULL returns all products
+CREATE PROCEDURE GetAllProducts
+    @category_id INT = NULL,
     @only_active BIT = 0
 AS
 BEGIN
     SET NOCOUNT ON;
 
-	-- Check for the presence of products (taking into account the category if passed)
+    -- Check for the presence of products (respecting both filters)
     IF NOT EXISTS (
-        SELECT 1 
+        SELECT 1
         FROM products p
         JOIN categories c ON p.category_id = c.id
         WHERE (@category_id IS NULL OR p.category_id = @category_id)
+          AND (@only_active = 0 OR p.is_active = 1)
     )
     BEGIN
         SELECT 
@@ -918,8 +863,7 @@ BEGIN
         RETURN;
     END
 
-    -- Returns the product list with filtering based on category if passed
-    -- and only active products if @only_active is 1
+    -- Return filtered product list
     SELECT 
         p.id,
         p.product_name,
@@ -929,14 +873,14 @@ BEGIN
         p.category_id,
         c.category_name,
         p.image_url,
-        p.discount,
-        p.is_active  -- Include is_active in the result
+        p.discount
     FROM products p
     JOIN categories c ON p.category_id = c.id
     WHERE (@category_id IS NULL OR p.category_id = @category_id)
       AND (@only_active = 0 OR p.is_active = 1);
 END;
 GO
+
 -- ######################################################################### GetAllOrders ###################################
 -- Get All Orders
 CREATE PROCEDURE GetAllOrders
@@ -1107,10 +1051,6 @@ BEGIN
 END
 GO
 -- ################################################################# DeleteProduct ###############################################
--- Drop the procedure if it exists
-DROP PROCEDURE IF EXISTS DeleteProduct;
-GO
-
 -- Create the DeleteProduct procedure that uses product_id
 CREATE PROCEDURE DeleteProduct
     @product_id INT
@@ -1813,3 +1753,37 @@ BEGIN
     END CATCH
 END;
 GO
+
+
+CREATE OR ALTER PROCEDURE UpdateProduct
+    @product_id INT,
+    @product_name VARCHAR(100) = NULL,
+    @product_description TEXT = NULL,
+    @price DECIMAL(10, 2) = NULL,
+    @stock INT = NULL,
+    @category_id INT = NULL,
+    @image_url VARCHAR(255) = NULL,
+    @discount DECIMAL(5, 2) = NULL,
+    @is_active BIT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE products
+    SET
+        product_name = COALESCE(@product_name, product_name),
+        product_description = COALESCE(@product_description, product_description),
+        price = COALESCE(@price, price),
+        stock = COALESCE(@stock, stock),
+        category_id = COALESCE(@category_id, category_id),
+        image_url = COALESCE(@image_url, image_url),
+        discount = COALESCE(@discount, discount),
+        is_active = COALESCE(@is_active, is_active)
+    WHERE id = @product_id;
+END;
+GO
+
+
+-- mahmoud elqalini
+-- mahmoud ramadan
+-- habiba abdelmalik

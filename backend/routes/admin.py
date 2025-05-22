@@ -3,8 +3,10 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, FloatField, IntegerField
 from wtforms.validators import DataRequired, NumberRange
 from datetime import datetime
+# from sqlalchemy.exc import SQLAlchemyError
 import uuid
 import os
+from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 import logging
 from sqlalchemy import text
@@ -280,7 +282,7 @@ def admin_dashboard(current_user):
         import traceback
         logger.error(traceback.format_exc())
         return jsonify({"message": f"Error: {str(e)}"}), 500
-
+############################################################################################################################################
 @admin_bp.route("/admin/products", methods=["GET"])
 @token_required
 def admin_get_products(current_user):
@@ -360,7 +362,7 @@ def admin_get_products(current_user):
             "message": f"Error: {str(e)}",
             "traceback": error_traceback
         }), 500
-
+############################################################################################################################################
 @admin_bp.route("/admin/users", methods=["GET"])
 @token_required
 def admin_get_users(current_user):
@@ -371,80 +373,56 @@ def admin_get_users(current_user):
         return jsonify({"message": "Unauthorized access"}), 403
     
     try:
-        # First, check if we can execute a simple query
+        # Test database connection
         logger.info("Testing database connection")
         test_query = text("SELECT 1")
         db.session.execute(test_query)
         logger.info("Database connection successful")
         
-        # Now check if the users table exists - use SQL Server syntax
-        logger.info("Checking if users table exists")
-        try:
-            table_check_query = text("""
-                SELECT TABLE_NAME 
-                FROM INFORMATION_SCHEMA.TABLES 
-                WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'users'
-            """)
-            table_exists = db.session.execute(table_check_query).fetchone()
-            
-            if not table_exists:
-                logger.error("Users table does not exist")
-                return jsonify({
-                    "success": False,
-                    "message": "Users table does not exist in the database"
-                }), 500
-                
-            logger.info("Users table exists, proceeding with query")
-        except Exception as table_check_error:
-            logger.error(f"Error checking users table: {str(table_check_error)}")
-            # Try a simpler approach - just query the users table directly
-            logger.info("Trying alternative approach to check users table")
+        # Call the Stored Procedure
+        result = db.session.execute(text("EXEC GetAllUsers")).fetchall()
         
-        # Try a simpler query that works across different SQL dialects
-        try:
-            # Get all users from the database with a simpler query
-            users_query = text("SELECT * FROM users")
-            users_result = db.session.execute(users_query).fetchall()
-            logger.info(f"Found {len(users_result) if users_result else 0} users")
-            
-            users = []
-            for row in users_result:
-                try:
-                    # Get column names dynamically
-                    columns = row._mapping.keys()
-                    logger.debug(f"Available columns: {columns}")
-                    
-                    user = {
-                        "id": row.id if 'id' in columns else None,
-                        "username": row.username if 'username' in columns else None,
-                        "email": row.email if 'email' in columns else None,
-                        "full_name": row.full_name if 'full_name' in columns else None,
-                        "user_address": row.user_address if hasattr(row, 'user_address') else None,
-                        "phone_number": row.phone_number if hasattr(row, 'phone_number') else None,
-                        "user_role": row.user_role if 'user_role' in columns else None
-                    }
-                    
-                    # Add these fields only if they exist
-                    if hasattr(row, 'created_at'):
-                        user["created_at"] = row.created_at.isoformat() if hasattr(row.created_at, 'isoformat') else str(row.created_at)
-                    
-                    if hasattr(row, 'last_login') and row.last_login:
-                        user["last_login"] = row.last_login.isoformat() if hasattr(row.last_login, 'isoformat') else str(row.last_login)
-                    
-                    users.append(user)
-                except Exception as row_error:
-                    logger.error(f"Error processing user row: {str(row_error)}")
-                    # Continue processing other rows
-            
-            logger.info(f"Returning {len(users)} users")
-            return jsonify({"success": True, "users": users}), 200
-            
-        except Exception as query_error:
-            logger.error(f"Error executing users query: {str(query_error)}")
+        # Process the result
+        if not result:
+            logger.error("No result returned from GetAllUsers procedure")
             return jsonify({
                 "success": False,
-                "message": f"Database query error: {str(query_error)}"
+                "message": "Internal server error"
             }), 500
+        
+        # Check if the result is an error message
+        if len(result) == 1 and hasattr(result[0], 'status') and result[0].status == 'fail':
+            logger.info("No users found")
+            return jsonify({
+                "success": True,  # Still return success to match frontend expectations
+                "users": [],      # Return empty array
+                "message": result[0].message
+            }), 200
+        
+        # Process users data
+        users = []
+        for row in result:
+            try:
+                user = {
+                    "id": row.id,
+                    "username": row.username,
+                    "email": row.email,
+                    "full_name": row.full_name,
+                    "user_address": row.user_address,
+                    "phone_number": row.phone_number,
+                    "user_role": row.user_role
+                    # Note: created_at and last_login are not returned by the Stored Procedure
+                }
+                users.append(user)
+            except Exception as row_error:
+                logger.error(f"Error processing user row: {str(row_error)}")
+                # Continue processing other rows
+        
+        logger.info(f"Returning {len(users)} users")
+        return jsonify({
+            "success": True,
+            "users": users
+        }), 200
         
     except Exception as e:
         import traceback
@@ -452,10 +430,11 @@ def admin_get_users(current_user):
         logger.error(f"Error fetching users: {str(e)}")
         logger.error(error_traceback)
         return jsonify({
-            "success": False, 
+            "success": False,
             "message": f"Error: {str(e)}",
             "traceback": error_traceback
         }), 500
+############################################################################################################################################
 
 @admin_bp.route("/admin/product/toggle-visibility/<int:product_id>", methods=["POST"])
 @token_required
@@ -507,7 +486,7 @@ def toggle_product_visibility(current_user, product_id):
         db.session.rollback()
         logger.error(f"Error updating product visibility: {str(e)}")
         return jsonify({"message": "Error updating product visibility", "error": str(e)}), 500
-
+############################################################################################################################################
 @admin_bp.route("/admin/product/update/<int:product_id>", methods=["POST"])
 @token_required
 def update_product(current_user, product_id):
@@ -521,8 +500,15 @@ def update_product(current_user, product_id):
     
     data = request.get_json()
     
+    # Validate required fields
+    required_fields = ['product_name', 'price', 'stock', 'category_id']
+    for field in required_fields:
+        if field not in data or data[field] is None:
+            logger.warning(f"Missing or invalid required field: {field}")
+            return jsonify({"message": f"Missing or invalid required field: {field}"}), 400
+    
     try:
-        
+        # Check if product exists
         product_result = db.session.execute(
             text("SELECT * FROM products WHERE id = :product_id"),
             {"product_id": product_id}
@@ -532,41 +518,48 @@ def update_product(current_user, product_id):
             logger.warning(f"Product not found for ID: {product_id}")
             return jsonify({"message": "Product not found"}), 404
         
+        # Prepare parameters for Stored Procedure
+        params = {
+            "product_id": product_id,
+            "product_name": data.get("product_name"),
+            "product_description": data.get("description"),
+            "price": float(data.get("price")) if data.get("price") is not None else None,
+            "stock": int(data.get("stock")) if data.get("stock") is not None else None,
+            "category_id": int(data.get("category_id")) if data.get("category_id") is not None else None,
+            "image_url": data.get("image_url"),
+            "discount": float(data.get("discount", 0)) if data.get("discount") is not None else None,
+            "is_active": data.get("is_active")  # Will be None if not provided by frontend
+        }
         
-        update_query = text("""
-            UPDATE products 
-            SET product_name = :product_name,
-                product_description = :description,
-                price = :price,
-                stock = :stock,
-                category_id = :category_id,
-                image_url = :image_url,
-                discount = :discount
-            WHERE id = :product_id""")
-        
+        # Call the Stored Procedure
         db.session.execute(
-            update_query,
-            {
-                "product_id": product_id,
-                "product_name": data.get("product_name"),
-                "description": data.get("description"),
-                "price": data.get("price"),
-                "stock": data.get("stock"),
-                "category_id": data.get("category_id"),
-                "image_url": data.get("image_url"),
-                "discount": data.get("discount", 0)
-            }
+            text("EXEC UpdateProduct "
+                 "@product_id = :product_id, "
+                 "@product_name = :product_name, "
+                 "@product_description = :product_description, "
+                 "@price = :price, "
+                 "@stock = :stock, "
+                 "@category_id = :category_id, "
+                 "@image_url = :image_url, "
+                 "@discount = :discount, "
+                 "@is_active = :is_active"),
+            params
         )
         
         db.session.commit()
         logger.info(f"Product {product_id} updated successfully")
         return jsonify({"success": True, "message": "Product updated successfully"}), 200
         
+    except ValueError as ve:
+        db.session.rollback()
+        logger.error(f"Invalid data type: {str(ve)}")
+        return jsonify({"success": False, "message": f"Invalid data type: {str(ve)}"}), 400
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error updating product: {str(e)}")
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
 
+#############################################################################################################################################
 @admin_bp.route("/admin/user/delete/<int:user_id>", methods=["DELETE"])
 @token_required
 def delete_user(current_user, user_id):
@@ -577,66 +570,33 @@ def delete_user(current_user, user_id):
         return jsonify({"message": "Unauthorized access"}), 403
     
     try:
-        # Check if the user exists
-        user_check_query = text("SELECT id, username, user_role FROM users WHERE id = :user_id")
-        user = db.session.execute(user_check_query, {"user_id": user_id}).fetchone()
+        # Call the Stored Procedure
+        result = db.session.execute(
+            text("EXEC DeleteUser @UserID = :user_id"),
+            {"user_id": user_id}
+        ).fetchone()
         
-        if not user:
-            logger.warning(f"User not found: {user_id}")
-            return jsonify({"success": False, "message": "User not found"}), 404
-        
-        # Prevent deletion of admin users
-        if user.user_role == 'Admin':
-            logger.warning(f"Attempt to delete admin user: {user_id}")
-            return jsonify({"success": False, "message": "Cannot delete admin users"}), 403
-        
-        # First, delete related records to maintain referential integrity
-        # The order matters due to foreign key constraints
-        
-        # 1. First delete from cart_details (child table)
-        cart_details_query = text("""
-            DELETE FROM cart_details 
-            WHERE cart_id IN (SELECT id FROM cart WHERE user_id = :user_id)
-        """)
-        db.session.execute(cart_details_query, {"user_id": user_id})
-        
-        # 2. Then delete from cart (parent table)
-        cart_query = text("DELETE FROM cart WHERE user_id = :user_id")
-        db.session.execute(cart_query, {"user_id": user_id})
-        
-        # 3. Delete from wishlist (if exists)
-        try:
-            wishlist_query = text("DELETE FROM wishlist WHERE user_id = :user_id")
-            db.session.execute(wishlist_query, {"user_id": user_id})
-        except Exception as e:
-            logger.warning(f"Error deleting from wishlist (may not exist): {str(e)}")
-        
-        # 4. Delete from product_reviews
-        reviews_query = text("DELETE FROM product_reviews WHERE user_id = :user_id")
-        db.session.execute(reviews_query, {"user_id": user_id})
-        
-        # 5. Delete from order_details first
-        order_details_query = text("""
-            DELETE FROM order_details 
-            WHERE order_id IN (SELECT id FROM orders WHERE user_id = :user_id)
-        """)
-        db.session.execute(order_details_query, {"user_id": user_id})
-        
-        # 6. Then delete from orders
-        orders_query = text("DELETE FROM orders WHERE user_id = :user_id")
-        db.session.execute(orders_query, {"user_id": user_id})
-        
-        # 7. Finally, delete the user
-        user_query = text("DELETE FROM users WHERE id = :user_id")
-        db.session.execute(user_query, {"user_id": user_id})
-        
-        # Commit all changes
+        # Commit the transaction
         db.session.commit()
         
-        logger.info(f"User {user_id} ({user.username}) completely deleted from database")
+        # Process the result from the Stored Procedure
+        if not result:
+            logger.error("No result returned from DeleteUser procedure")
+            return jsonify({"success": False, "message": "Internal server error"}), 500
+        
+        status = result.status
+        message = result.message
+        
+        if status == 'fail':
+            logger.warning(f"Failed to delete user {user_id}: {message}")
+            status_code = 404 if result.StatusCode == 1 else 403 if result.StatusCode == 2 else 400
+            return jsonify({"success": False, "message": message}), status_code
+        
+        # Success case
+        logger.info(f"User {user_id} deleted successfully")
         return jsonify({
-            "success": True, 
-            "message": f"User {user.username} deleted successfully"
+            "success": True,
+            "message": message  # Use the message from the Stored Procedure
         }), 200
         
     except Exception as e:
@@ -646,11 +606,10 @@ def delete_user(current_user, user_id):
         logger.error(f"Error deleting user: {str(e)}")
         logger.error(error_traceback)
         return jsonify({
-            "success": False, 
+            "success": False,
             "message": f"Error: {str(e)}",
-            "traceback": error_traceback
-        }), 500
-
+            "traceback": error_traceback}), 500
+#############################################################################################################################################
 @admin_bp.route("/admin/user/update/<int:user_id>", methods=["PUT", "POST"])
 @token_required
 def update_user(current_user, user_id):
@@ -742,6 +701,7 @@ def update_user(current_user, user_id):
             "message": f"Error: {str(e)}",
             "traceback": error_traceback
         }), 500
+#############################################################################################################################################
 
 @admin_bp.route("/admin/product/add", methods=["POST"])
 @token_required
@@ -761,47 +721,95 @@ def add_product(current_user):
         # Basic validation
         required_fields = ['product_name', 'price', 'stock', 'category_id']
         for field in required_fields:
-            if field not in data or not data[field]:
+            if field not in data or data[field] is None:
+                logger.warning(f"Missing required field: {field}")
                 return jsonify({
                     "success": False, 
                     "message": f"Missing required field: {field}"
                 }), 400
         
-        # Create a new product
-        new_product = Product(
-            product_name=data.get("product_name"),
-            product_description=data.get("description", ""),  # Changed to product_description
-            price=data.get("price"),
-            stock=data.get("stock"),
-            category_id=data.get("category_id"),
-            image_url=data.get("image_url", ""),
-            discount=data.get("discount", 0),
-            is_active=True
-        )
+        # Prepare parameters for Stored Procedure
+        params = {
+            "product_name": data.get("product_name"),
+            "description": data.get("description"),
+            "price": float(data.get("price")),
+            "stock": int(data.get("stock")),
+            "category_id": int(data.get("category_id")),
+            "image_url": data.get("image_url", ""),
+            "discount": float(data.get("discount", 0))
+        }
         
-        db.session.add(new_product)
+        # Call the Stored Procedure
+        result = db.session.execute(
+            text("EXEC AddNewProduct "
+                 "@product_name = :product_name, "
+                 "@description = :description, "
+                 "@price = :price, "
+                 "@stock = :stock, "
+                 "@category_id = :category_id, "
+                 "@image_url = :image_url, "
+                 "@discount = :discount"),
+            params
+        ).fetchone()
+        
+        # Commit the transaction
         db.session.commit()
         
-        logger.info(f"Product created successfully: {new_product.id}")
+        # Process the result from the Stored Procedure
+        if not result:
+            logger.error("No result returned from AddNewProduct procedure")
+            return jsonify({"success": False, "message": "Internal server error"}), 500
         
-        # Return the newly created product
+        status = result.status
+        message = result.message
+        
+        if status == 'fail':
+            logger.warning(f"Failed to add product: {message}")
+            return jsonify({"success": False, "message": message}), 400
+        
+        # Fetch the product details (either new or updated)
+        product_query = text("""
+            SELECT id, product_name, product_description, price, stock, 
+                   category_id, image_url, discount, is_active 
+            FROM products 
+            WHERE product_name = :product_name
+        """)
+        product = db.session.execute(
+            product_query, {"product_name": params["product_name"]}
+        ).fetchone()
+        
+        if not product:
+            logger.error("Product not found after adding/updating")
+            return jsonify({"success": False, "message": "Product not found after operation"}), 500
+        
+        logger.info(f"Product processed successfully: {product.id}")
         return jsonify({
-            "success": True, 
-            "message": "Product added successfully",
+            "success": True,
+            "message": message,  # Use the message from the Stored Procedure
             "product": {
-                "id": new_product.id,
-                "product_name": new_product.product_name,
-                "description": new_product.product_description,  # Changed to product_description
-                "price": float(new_product.price),
-                "stock": new_product.stock,
-                "category_id": new_product.category_id,
-                "image_url": new_product.image_url,
-                "discount": float(new_product.discount),
-                "is_active": new_product.is_active
+                "id": product.id,
+                "product_name": product.product_name,
+                "description": product.product_description,
+                "price": float(product.price),
+                "stock": product.stock,
+                "category_id": product.category_id,
+                "image_url": product.image_url,
+                "discount": float(product.discount),
+                "is_active": product.is_active
             }
         }), 201
         
+    except ValueError as ve:
+        db.session.rollback()
+        logger.error(f"Invalid data type: {str(ve)}")
+        return jsonify({"success": False, "message": f"Invalid data type: {str(ve)}"}), 400
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error adding product: {str(e)}")
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+#############################################################################################################################################
+
+
+# mahmoud elqalini
+# mahmoud ramadan
+# habiba abdelmalik
